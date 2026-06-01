@@ -1,0 +1,9 @@
+# The OpenWRT source tree + build artifacts (multiple GB, fully regenerable).
+src/
+
+# Firmware binaries (stock dumps + our build outputs) — not version controlled.
+firmware/
+
+# Editor / OS noise
+*.swp
+.DS_Store
