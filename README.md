@@ -36,19 +36,29 @@ cd ~/Documents/openwrt-wr941nd
 #   JOBS=4 ./scripts/fw-build.sh          # kevesebb párhuzamos job
 #   OPENWRT_TAG=v19.07.10 ./scripts/fw-build.sh   # másik tag (3. fázis)
 
+# címkézett kimeneti mappa (nem írja felül a korábbit)
+BUILD_LABEL=ap-only ./scripts/fw-build.sh
+
 # 3) Interaktív shell a konténerben (pl. csomagok kivétele a 2. fázisban)
 ./scripts/shell.sh
 #   majd: cd openwrt && make menuconfig
 ```
 
 ### Eredmény
+A build a friss image-eket a forrásfából **automatikusan átmásolja egy címkézett,
+nem felülíródó almappába**:
 ```
-src/openwrt/bin/targets/ar71xx/tiny/
-  openwrt-18.06.9-ar71xx-tiny-tl-wr941nd-v4-squashfs-factory.bin
-  openwrt-18.06.9-ar71xx-tiny-tl-wr941nd-v4-squashfs-sysupgrade.bin
+firmware/built/<címke>/
+  openwrt-ar71xx-tiny-tl-wr941nd-v4-squashfs-factory.bin
+  openwrt-ar71xx-tiny-tl-wr941nd-v4-squashfs-sysupgrade.bin
+  openwrt-ar71xx-tiny-device-tl-wr941nd-v4.manifest
 ```
+- A `<címke>` alapból `<verzió>-<időbélyeg>` (pl. `18.06.9-20260601-224500`), vagy add
+  meg magad: `BUILD_LABEL=ap-only ./scripts/fw-build.sh`. Így **minden build megmarad**,
+  egy következő nem írja felül az előzőt.
 - A **factory.bin** a gyári TP-Link webfelületről történő első telepítéshez.
 - A **sysupgrade.bin** egy már OpenWRT-t futtató eszköz frissítéséhez (LuCI / `sysupgrade`).
+- A gyári-ekvivalens 18.06.9 build itt van: `firmware/built/18.06.9-stock-equivalent/`.
 
 ## Felépítés
 
@@ -61,7 +71,7 @@ src/openwrt/bin/targets/ar71xx/tiny/
 | [scripts/shell.sh](scripts/shell.sh) | Interaktív shell (menuconfig, hibakeresés) |
 | [scripts/_inner-build.sh](scripts/_inner-build.sh) | A konténeren belül futó build-logika |
 | [scripts/_common.sh](scripts/_common.sh) | Podman-detektálás (host vagy flatpak) |
-| `firmware/` | Bináris gyűjtő (nem verziókezelt): `stock/` = gyári/ref dumpok, `built/` = az általunk fordított image-ek |
+| `firmware/` | Bináris gyűjtő (nem verziókezelt): `stock/` = gyári/ref dumpok, `built/<címke>/` = az általunk fordított image-ek, buildenként külön mappában |
 
 ## Megjegyzések
 
