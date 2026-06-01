@@ -28,6 +28,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         locales \
     && rm -rf /var/lib/apt/lists/*
 
+# Firmware analysis tools: unpack/inspect squashfs rootfs and locate the
+# kernel/rootfs blobs inside a factory image (useful for phase 3 partitioning).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        squashfs-tools binwalk cpio \
+    && rm -rf /var/lib/apt/lists/*
+
 # OpenWRT's build system expects a UTF-8 locale.
 RUN sed -i 's/^# *\(en_US.UTF-8\)/\1/' /etc/locale.gen && locale-gen
 ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
