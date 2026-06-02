@@ -76,6 +76,7 @@ firmware/built/<címke>/
 | [scripts/img-build.sh](scripts/img-build.sh) | Konténer-image build |
 | [scripts/fw-build.sh](scripts/fw-build.sh) | Teljes, idempotens firmware build a konténerben |
 | [scripts/shell.sh](scripts/shell.sh) | Interaktív shell (menuconfig, hibakeresés) |
+| [scripts/clean.sh](scripts/clean.sh) | A (Drive-on kívüli) build-fa teljes kitakarítása, megerősítéssel; `--image`-dzsel a konténer-image is |
 | [scripts/_inner-build.sh](scripts/_inner-build.sh) | A konténeren belül futó build-logika |
 | [scripts/_common.sh](scripts/_common.sh) | Podman-detektálás (host vagy flatpak) |
 | `firmware/` | Bináris gyűjtő (nem verziókezelt): `stock/` = gyári/ref dumpok, `built/<címke>/` = az általunk fordított image-ek, buildenként külön mappában |
