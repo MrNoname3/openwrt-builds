@@ -12,6 +12,10 @@
 #   JOBS=4 scripts/fw-build.sh         # limit parallelism
 #   OPENWRT_TAG=v19.07.10 scripts/fw-build.sh        # try a different tag (phase 3)
 #   BUILD_LABEL=ap-only scripts/fw-build.sh          # name the output folder
+#   SEED_FILE=wr941nd-v4-18.06-ap.seed.config BUILD_LABEL=ap \
+#       scripts/fw-build.sh                          # build a different config
+#   CLEAN=kernel SEED_FILE=... scripts/fw-build.sh   # when the new config changes
+#       the kernel (adds/removes kmods); CLEAN=all for a full (toolchain-keeping) clean
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
@@ -31,6 +35,8 @@ podman_run run --rm -it \
     -v "$PROJECT_DIR/config:/opt/config:ro,Z" \
     -e "JOBS=${JOBS:-}" \
     -e "OPENWRT_TAG=${OPENWRT_TAG:-}" \
+    -e "SEED_FILE=${SEED_FILE:-}" \
+    -e "CLEAN=${CLEAN:-}" \
     -w /work \
     "$IMAGE_NAME" \
     bash /opt/scripts/_inner-build.sh

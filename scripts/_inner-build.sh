@@ -11,7 +11,9 @@
 set -euo pipefail
 
 OPENWRT_TAG="${OPENWRT_TAG:-v18.06.9}"
-SEED_CONFIG="/opt/config/wr941nd-v4-18.06.seed.config"
+# Which seed .config to apply (filename under /opt/config). Defaults to the
+# stock-equivalent build; set SEED_FILE to pick another (e.g. the AP-only one).
+SEED_CONFIG="/opt/config/${SEED_FILE:-wr941nd-v4-18.06.seed.config}"
 PROFILE_SYM="CONFIG_TARGET_ar71xx_tiny_DEVICE_tl-wr941nd-v4=y"
 JOBS="${JOBS:-$(nproc)}"
 
@@ -39,6 +41,19 @@ echo "[i] OpenWRT checkout: $(git describe --tags --always 2>/dev/null || echo u
 echo "[*] Updating & installing feeds ..."
 ./scripts/feeds update -a
 ./scripts/feeds install -a
+
+# 2b. Optional clean -----------------------------------------------------------
+# Changing packages that pull/drop KERNEL MODULES changes the kernel VERMAGIC.
+# In an already-built tree that desyncs the kernel package from opkg and breaks
+# package/install ("Cannot satisfy ... kernel (= <hash>)"). When switching to a
+# config that alters the kernel, pass CLEAN=kernel (rebuild kernel + kmods) or
+# CLEAN=all (full clean, keeps toolchain) to keep everything consistent.
+case "${CLEAN:-}" in
+    kernel) echo "[*] CLEAN=kernel -> make target/linux/clean"; make target/linux/clean; rm -rf tmp ;;
+    all)    echo "[*] CLEAN=all -> make clean"; make clean; rm -rf tmp ;;
+    "")     : ;;
+    *)      echo "[!] Unknown CLEAN='$CLEAN' (use kernel|all)"; exit 2 ;;
+esac
 
 # 3. Config -------------------------------------------------------------------
 echo "[*] Applying seed config and running 'make defconfig' ..."

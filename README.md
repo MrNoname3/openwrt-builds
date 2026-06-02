@@ -67,12 +67,32 @@ firmware/built/<címke>/
 - A **sysupgrade.bin** egy már OpenWRT-t futtató eszköz frissítéséhez (LuCI / `sysupgrade`).
 - A gyári-ekvivalens 18.06.9 build itt van: `firmware/built/18.06.9-stock-equivalent/`.
 
+### Build variánsok és a kernel-tanulság
+
+Másik seed-configgal másik image-et építhetsz a `SEED_FILE` változóval:
+```bash
+SEED_FILE=wr941nd-v4-18.06-ap.seed.config BUILD_LABEL=ap ./scripts/fw-build.sh
+```
+
+> ⚠️ **Kernel-tanulság.** Ha egy seed olyan csomagot ad/vesz ki, ami **kernel-modult**
+> (`kmod-*`) érint (pl. `iptables`/`firewall` eltávolítása → netfilter kmod-ok kiesnek),
+> az megváltoztatja a kernel VERMAGIC-ot. Egy már megépített fában ettől a kernel-csomag
+> deszinkronizálódik az opkg-tól, és a `package/install` elhasal: *„Cannot satisfy …
+> kernel (= <hash>)"*. Ilyenkor add hozzá a `CLEAN=kernel`-t (kernel + kmod-ok tiszta
+> újrafordítása) vagy `CLEAN=all`-t (teljes clean, a toolchain marad):
+> ```bash
+> CLEAN=kernel SEED_FILE=valami.seed.config ./scripts/fw-build.sh
+> ```
+> Ezért a **pragmatikus AP** seed szándékosan NEM nyúl egyetlen kmod-hoz sem — csak
+> userspace daemont vesz ki (dnsmasq, odhcpd) —, így a kernel változatlan és a build stabil.
+
 ## Felépítés
 
 | Fájl | Szerep |
 |------|--------|
 | [Containerfile](Containerfile) | Debian bullseye + OpenWRT 18.06 build-függőségek, `builder` user |
-| [config/wr941nd-v4-18.06.seed.config](config/wr941nd-v4-18.06.seed.config) | Seed `.config` (target+subtarget+profil); a `make defconfig` egészíti ki |
+| [config/wr941nd-v4-18.06.seed.config](config/wr941nd-v4-18.06.seed.config) | Seed `.config` — **gyári-ekvivalens** (LuCI + xt_CT); `make defconfig` egészíti ki |
+| [config/wr941nd-v4-18.06-ap.seed.config](config/wr941nd-v4-18.06-ap.seed.config) | Seed `.config` — **pragmatikus AP** (gyári mínusz dnsmasq/odhcpd; kernel változatlan) |
 | [scripts/img-build.sh](scripts/img-build.sh) | Konténer-image build |
 | [scripts/fw-build.sh](scripts/fw-build.sh) | Teljes, idempotens firmware build a konténerben |
 | [scripts/shell.sh](scripts/shell.sh) | Interaktív shell (menuconfig, hibakeresés) |
