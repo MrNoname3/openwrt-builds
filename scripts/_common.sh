@@ -8,8 +8,14 @@ set -euo pipefail
 
 # Project root = parent of this scripts/ directory.
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SRC_DIR="$PROJECT_DIR/src"
 IMAGE_NAME="openwrt-builder"
+
+# The OpenWRT working tree is ~9 GB / 300k+ files. It deliberately lives OUTSIDE
+# the project folder, because Documents/ here is a synced cloud-drive folder and
+# a cloud client would try to sync every intermediate build file. Keep only the
+# small tracked files + final binaries (firmware/) under the synced folder.
+# Override the location with OPENWRT_SRC if you want it elsewhere.
+SRC_DIR="${OPENWRT_SRC:-$HOME/.local/share/openwrt-wr941nd/src}"
 
 # PODMAN is an array so we can transparently prepend `flatpak-spawn --host`.
 if command -v podman >/dev/null 2>&1; then

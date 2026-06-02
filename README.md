@@ -4,8 +4,15 @@ Podman-alapú, **rootless**, konténerizált OpenWRT buildroot a TL-WR941ND **v4
 routerhez (Atheros AR7240, `ar71xx` target, `tiny` subtarget).
 
 A hostra **semmit nem telepítünk** — minden ebben a mappában és a Podman saját
-konténer-tárolójában él. A nagy OpenWRT forrás-/build-fa a [`src/`](src/) mappában
-lakik (a git nem követi), és bind-mounttal kerül a konténerbe.
+konténer-tárolójában él.
+
+> ⚠️ **Fontos — a build-fa NEM ebben a mappában van.** A teljes OpenWRT forrás-/build-fa
+> ~9 GB és 300 000+ apró fájl. Mivel ez a `Documents` mappa egy **szinkronizált
+> felhő-Drive** alatt van, a build-fa **szándékosan kívül** lakik:
+> `~/.local/share/openwrt-wr941nd/src` (a `.local/share` nincs a Drive alatt).
+> Így a Drive **csak a kis, fontos fájlokat és a végleges binárisokat** (`firmware/`)
+> szinkronizálja. A helyét a `OPENWRT_SRC` környezeti változóval bárhová átteheted:
+> `OPENWRT_SRC=/path/to/src ./scripts/fw-build.sh`.
 
 ## Cél (fázisok)
 
