@@ -97,6 +97,7 @@ SEED_FILE=wr941nd-v4-18.06-ap.seed.config BUILD_LABEL=ap ./scripts/fw-build.sh
 | [scripts/fw-build.sh](scripts/fw-build.sh) | Teljes, idempotens firmware build a konténerben |
 | [scripts/shell.sh](scripts/shell.sh) | Interaktív shell (menuconfig, hibakeresés) |
 | [scripts/clean.sh](scripts/clean.sh) | A (Drive-on kívüli) build-fa teljes kitakarítása, megerősítéssel; `--image`-dzsel a konténer-image is |
+| [scripts/router-backup.sh](scripts/router-backup.sh) | A futó router flash-partícióinak mentése SSH-n (3× ellenőrzéssel); `firmware/router-backup/<ts>/` |
 | [scripts/_inner-build.sh](scripts/_inner-build.sh) | A konténeren belül futó build-logika |
 | [scripts/_common.sh](scripts/_common.sh) | Podman-detektálás (host vagy flatpak) |
 | `firmware/` | Bináris gyűjtő (nem verziókezelt): `stock/` = gyári/ref dumpok, `built/<címke>/` = az általunk fordított image-ek, buildenként külön mappában |
@@ -111,6 +112,23 @@ SEED_FILE=wr941nd-v4-18.06-ap.seed.config BUILD_LABEL=ap ./scripts/fw-build.sh
   user. A `src/`-be írt fájlok a hoston a te uid-eddel (`attila`) jönnek létre.
 - A `src/openwrt/dl/`, `build_dir/`, `staging_dir/` a `src/`-ben marad, így az
   újrafordítás gyors (a letöltött forrásokat és a lefordított toolchaint újrahasználja).
+
+## Router mentés (SSH, chip-kiolvasás nélkül)
+
+A `scripts/router-backup.sh` a futó eszközről menti az `mtd` partíciókat (olvasás
+non-destruktív), 3× lefuttatva és sha256-tal összevetve; ha egyeznek, egy készletet tart meg.
+```bash
+./scripts/router-backup.sh                 # tplink-router, firmware/router-backup/<ts>/
+./scripts/router-backup.sh my-host /út      # más host/cél
+RUNS=5 ./scripts/router-backup.sh           # több ellenőrző menet
+```
+Régi dropbearhez a `~/.ssh/openssl-allow-sha1.cnf` megléte esetén automatikusan engedi a
+SHA-1-et (lásd [`ssh-legacy`](#) wrapper). A jelenlegi eszköz feltérképezve:
+
+- **Flash chip:** Winbond **W25Q32** (4 MB) → a cél **W25Q128** (16 MB), ugyanaz a család.
+- **Partíciók (4 MB):** `u-boot` @0x000000 (128K) · `firmware`=kernel+rootfs @0x020000 (≈3,99 MB)
+  · `art` @0x3F0000 (64K). A `firmware` átfedi a `kernel`+`rootfs` nézeteket.
+- Az **`art`** (kalibráció) **eszköz-egyedi** — a 16MB-os chipre a végére (0xFF0000) kell.
 
 ## 3. fázis — 16MB flash (W25Q128) — vázlat
 
