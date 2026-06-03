@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+//
+// TL-WR941ND v4 with the flash upgraded to 16 MB (XT25F128B / "W25Q128").
+// Same board as the stock v4 (AR7240, ath79) -- we only override the flash
+// partition table so Linux uses the full 16 MB:
+//   u-boot   @0x000000  0x020000   (unchanged; holds the MAC)
+//   firmware @0x020000  0xFD0000   (kernel+rootfs, ~15.8 MB)
+//   art      @0xFF0000  0x010000   (device-unique WiFi calibration, at flash end)
+// Keeping compatible = "tplink,tl-wr941-v4" so board.d sets up the switch/LAN/WAN
+// exactly like the stock v4; only the partition geometry differs.
+
+#include "ar7240_tplink_tl-wr.dtsi"
+
+/ {
+	model = "TP-Link TL-WR941N/ND v4 (16M)";
+	compatible = "tplink,tl-wr941-v4", "qca,ar7240";
+};
+
+&spi {
+	flash@0 {
+		partitions {
+			/delete-node/ partition@20000;
+			/delete-node/ partition@3f0000;
+
+			partition@20000 {
+				compatible = "tplink,firmware";
+				reg = <0x20000 0xfd0000>;
+				label = "firmware";
+			};
+
+			partition@ff0000 {
+				reg = <0xff0000 0x10000>;
+				label = "art";
+				read-only;
+			};
+		};
+	};
+};

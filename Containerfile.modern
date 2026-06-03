@@ -1,0 +1,33 @@
+# Modern OpenWRT buildroot environment (for 21.02+/24.10, kernel 5.15/6.6).
+#
+# Debian bookworm: python3 by default, recent gcc/binutils -- what current
+# OpenWrt expects. (The 18.06 build uses the separate bullseye Containerfile,
+# which pins python2.) Same rootless model: builds as the unprivileged 'builder'
+# user; start with --userns=keep-id so bind-mounted files stay owned correctly.
+
+FROM debian:bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# OpenWrt build dependencies (Debian) for current releases.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential clang flex bison g++ gawk \
+        gcc-multilib g++-multilib gettext git \
+        file unzip bzip2 gzip tar xz-utils patch diffutils findutils time \
+        subversion mercurial rsync wget curl ca-certificates \
+        libncurses-dev zlib1g-dev libssl-dev libelf-dev \
+        python3 python3-setuptools python3-dev \
+        swig xsltproc \
+        squashfs-tools \
+        locales \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN sed -i 's/^# *\(en_US.UTF-8\)/\1/' /etc/locale.gen && locale-gen
+ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+
+RUN useradd -m -u 1000 -s /bin/bash builder
+
+WORKDIR /work
+ENV HOME=/work
+
+CMD ["bash"]
