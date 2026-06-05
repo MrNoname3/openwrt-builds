@@ -142,3 +142,37 @@ SHA-1-et (lásd [`ssh-legacy`](#) wrapper). A jelenlegi eszköz feltérképezve:
 - 16MB flash + 64MB RAM mellett a „4MB/32MB nem elég” figyelmeztetés megszűnik, így
   futtatható **mai** OpenWRT (pl. 24.10). Ehhez ebben a környezetben elég az
   `OPENWRT_TAG`-et átállítani és a DTS-patcht a forrásfába tenni.
+
+## Üzemeltetés / hibakeresés (telepített AP)
+
+### Spontán újraindulás soros konzol + SysRq miatt (FONTOS)
+
+Tünet: az AP **magától újraindul** (a `dmesg`/`logread` csak
+`Watchdog has previously reset the system`-et mutat, **nincs** OOM/panic/crash). Az
+újraindulás jellemzően a soros adapterhez köthető — vagy a **be-/kihúzáskor**, vagy ha a
+beforrasztott soros **pinheader üresen, csatlakoztatás nélkül a panelen marad**.
+
+Ok: a kernel `console=ttyS0,115200`-val fut, és a **SysRq alapból engedélyezett**
+(`/proc/sys/kernel/sysrq = 1`). Egy **lebegő/zajos soros vonal** (üres header, vagy
+hot-unplug) **BREAK jelet** generálhat, amit a kernel **SysRq-parancsnak** értelmez
+(reboot/crash/hang). A `wmac`/AR7240 watchdog (timeout **30 mp**, etetés 5 mp-enként)
+ilyenkor ~25–30 mp múlva resetel, ha a rendszer beragadt.
+
+Megoldás (alkalmazva a telepített eszközön, perzisztens a `/etc/sysctl.conf`-ban):
+```sh
+# runtime + perzisztens
+echo 0 > /proc/sys/kernel/sysrq
+echo 'kernel.sysrq=0' >> /etc/sysctl.conf
+```
+Ez headless AP-n **hátrány nélküli** (a SysRq csak debug-funkció; a soros konzol
+**kimenete** továbbra is megy). Ha valaha SysRq-debug kell, ideiglenesen vissza:
+`echo 1 > /proc/sys/kernel/sysrq`.
+
+Továbbá: a soros adaptert **csak áramtalanított panelnél** dugd/húzd, vagy ha menet közben
+muszáj, a **GND-t kösd be elsőnek és húzd ki utolsónak**, a 3,3 V/TX vezetéket ne mozgasd
+(a megosztott tápon keletkező tranziens szintén watchdog-resetet okozhat).
+
+### RAM (32 MB) — szűkös, de elég
+
+24.10 + LuCI + 802.11r mellett ~7 MB szabad RAM. Nincs OOM, de kevés a tartalék; ha több
+fejhely kell, az **AP-only csomag-strip** (LuCI/uhttpd/ppp eltávolítása) felszabadít pár MB-ot.
