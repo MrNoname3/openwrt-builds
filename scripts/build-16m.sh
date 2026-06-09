@@ -15,6 +15,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 MODERN_IMAGE="openwrt-builder-modern"
 SRC24="${OPENWRT_SRC_24:-$HOME/.local/share/openwrt-wr941nd/openwrt-24.10}"
 OUT_SUB="bin/targets/ath79/tiny"
+# Output subfolder under firmware/built/ -- override per version so a 25.12 build
+# doesn't clobber the 24.10 full image (e.g. BUILD_TAG=16m-25.12).
+BUILD_TAG="${BUILD_TAG:-16m-24.10}"
 
 [ -d "$SRC24/.git" ] || { echo "[!] 24.10 source not found at $SRC24" >&2; exit 1; }
 
@@ -32,6 +35,7 @@ podman_run run --rm \
     -v "$PROJECT_DIR/config:/opt/config:ro,Z" \
     -v "$PROJECT_DIR/scripts:/opt/scripts:ro,Z" \
     -e "JOBS=${JOBS:-}" \
+    -e "SEED_FILE=${SEED_FILE:-}" \
     -w /work \
     "$MODERN_IMAGE" \
     bash /opt/scripts/_inner-build-16m.sh
@@ -52,7 +56,7 @@ echo "[i] Using backup: $bkdir"
 
 # 5. Assemble the full 16MB flash image ---------------------------------------
 #   0x000000 u-boot | 0x020000 firmware | 0xFF0000 art ; gaps = 0xFF (erased).
-dest="$PROJECT_DIR/firmware/built/16m-24.10"
+dest="$PROJECT_DIR/firmware/built/$BUILD_TAG"
 mkdir -p "$dest"
 full="$dest/full16-wr941nd-v4.bin"
 echo "[*] Assembling $full (16 MB, 0xFF-filled) ..."
