@@ -9,7 +9,9 @@
 #   /opt/scripts -> project scripts/ (read-only)
 set -euo pipefail
 
-SEED="/opt/config/wr941nd-v4-24.10-16m.seed.config"
+# Seed is overridable via SEED_FILE (e.g. wr941nd-v4-25.12-16m.seed.config for the
+# 25.12/64MB build); defaults to the 24.10 seed.
+SEED="/opt/config/${SEED_FILE:-wr941nd-v4-24.10-16m.seed.config}"
 DTS_SRC="/opt/config/ath79-24.10/ar7240_tplink_tl-wr941-v4-16m.dts"
 DEV_SRC="/opt/config/ath79-24.10/tplink_tl-wr941-v4-16m.device.mk"
 PROFILE_SYM="CONFIG_TARGET_ath79_tiny_DEVICE_tplink_tl-wr941-v4-16m=y"

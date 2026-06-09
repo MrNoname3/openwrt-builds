@@ -16,6 +16,15 @@
 	compatible = "tplink,tl-wr941-v4", "qca,ar7240";
 };
 
+// 25.12 binds the ath9k (AR9280) WiFi via its PCI id and pulls the radio
+// calibration from the "art" partition through the nvmem cell defined below.
+// 24.10 loaded calibration from the "art" mtd partition by name, so this is a
+// harmless no-op there but is REQUIRED for 25.12 (otherwise the DTB build fails
+// with "Reference to non-existent node or label calibration_art_1000").
+&ath9k {
+	compatible = "pci168c,002a";
+};
+
 &spi {
 	flash@0 {
 		partitions {
@@ -32,6 +41,21 @@
 				reg = <0xff0000 0x10000>;
 				label = "art";
 				read-only;
+
+				// Re-create the calibration nvmem cell that lived in the
+				// stock art@3f0000 we deleted above. Offset 0x1000 is relative
+				// to the art partition start, and the art contents are copied
+				// byte-for-byte to flash 0xFF0000, so the WiFi calibration is
+				// still at +0x1000. Referenced by &ath9k in 25.12.
+				nvmem-layout {
+					compatible = "fixed-layout";
+					#address-cells = <1>;
+					#size-cells = <1>;
+
+					calibration_art_1000: calibration@1000 {
+						reg = <0x1000 0xeb8>;
+					};
+				};
 			};
 		};
 	};
