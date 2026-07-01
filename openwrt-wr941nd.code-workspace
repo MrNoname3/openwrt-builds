@@ -1,0 +1,55 @@
+{
+	// Portable workspace for the TL-WR941ND OpenWrt build project.
+	// Uses only relative paths so it works from any clone location:
+	// open this file in VS Code (File > Open Workspace from File...) and
+	// everything below is set up automatically.
+	"folders": [
+		{
+			"name": "openwrt-wr941nd",
+			"path": "."
+		}
+	],
+	"settings": {
+		// The multi-GB OpenWrt source tree and firmware blobs live outside the
+		// repo; hide the safety-net ignores and build noise from the explorer
+		// and search so the workspace stays snappy.
+		"files.exclude": {
+			"**/.git": true,
+			"src": true,
+			"firmware": true
+		},
+		"search.exclude": {
+			"src": true,
+			"firmware": true
+		},
+		"files.watcherExclude": {
+			"**/src/**": true,
+			"**/firmware/**": true
+		},
+		// Treat the project's non-standard file types sensibly.
+		"files.associations": {
+			"*.seed.config": "properties",
+			"Containerfile*": "dockerfile",
+			"*.nft": "shellscript",
+			"shinit": "shellscript",
+			"rc.local": "shellscript",
+			"*/etc/config/*": "properties",
+			"*/uci-defaults/*": "shellscript"
+		},
+		"[shellscript]": {
+			"editor.tabSize": 4,
+			"editor.insertSpaces": false,
+			"files.eol": "\n"
+		},
+		"shellcheck.enable": true
+	},
+	"extensions": {
+		// Suggested on first open; no absolute paths, safe to share.
+		"recommendations": [
+			"timonwong.shellcheck",
+			"foxundermoon.shell-format",
+			"ms-azuretools.vscode-docker",
+			"redhat.vscode-yaml"
+		]
+	}
+}
