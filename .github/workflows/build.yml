@@ -64,8 +64,11 @@ jobs:
       - name: Clone OpenWrt at the pinned tag
         # github.com mirror of git.openwrt.org -- identical tags, much faster
         # from an Actions runner.
+        # Blobless clone, NOT shallow: scripts/getver.sh counts commits to derive
+        # the revision (rXXXXX); with --depth 1 it falls back to r1 and taints
+        # base-files' version + /etc/openwrt_release (seen on the first CI run).
         run: |
-          git clone --depth 1 --branch "$OPENWRT_TAG" \
+          git clone --filter=blob:none --branch "$OPENWRT_TAG" \
             https://github.com/openwrt/openwrt.git "$HOME/openwrt"
 
       - name: Restore dl/ cache
