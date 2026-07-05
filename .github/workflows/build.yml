@@ -1,0 +1,125 @@
+# Build the custom 16MB TL-WR941ND v4 firmware from source, exactly like the
+# local build: same Containerfile.modern image, same _inner-build-16m.sh, same
+# seed -- so a local podman build and this CI build are directly comparable
+# (supply-chain cross-check).
+#
+# - pull_request / push(master): runs when anything build-relevant changes.
+# - push to master additionally publishes a GitHub Release with the images.
+# - workflow_dispatch: manual run (also used by check-openwrt-release to build
+#   on its bump-PR branch, since GITHUB_TOKEN-created PRs don't trigger
+#   pull_request workflows).
+#
+# NOT built here: the FULLFLASH image. It needs the device-unique u-boot + art
+# dumps (with the device MAC), which live only in the local backup, on purpose.
+
+name: build
+
+on:
+  pull_request:
+    paths:
+      - 'ci/**'
+      - 'config/**'
+      - 'scripts/**'
+      - 'Containerfile.modern'
+      - '.github/workflows/build.yml'
+  push:
+    branches: [master]
+    paths:
+      - 'ci/**'
+      - 'config/**'
+      - 'scripts/**'
+      - 'Containerfile.modern'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write # create releases
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Load device build settings
+        run: cat ci/wr941nd-v4-16m.env | grep -v '^#' | grep . >> "$GITHUB_ENV"
+
+      - name: Free up runner disk space
+        # The OpenWrt buildroot needs ~20GB; drop the biggest preinstalled
+        # toolchains we don't use.
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+                      /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          sudo docker image prune -af >/dev/null
+          df -h /
+
+      - name: Build the builder container image
+        run: docker build -t openwrt-builder-modern -f Containerfile.modern .
+
+      - name: Clone OpenWrt at the pinned tag
+        # github.com mirror of git.openwrt.org -- identical tags, much faster
+        # from an Actions runner.
+        run: |
+          git clone --depth 1 --branch "$OPENWRT_TAG" \
+            https://github.com/openwrt/openwrt.git "$HOME/openwrt"
+
+      - name: Restore dl/ cache
+        uses: actions/cache@v4
+        with:
+          path: ~/openwrt/dl
+          key: dl-${{ env.OPENWRT_TAG }}-${{ hashFiles('config/**') }}
+          restore-keys: |
+            dl-${{ env.OPENWRT_TAG }}-
+            dl-
+
+      - name: Build firmware in the container
+        # The image's 'builder' user is uid 1000; the runner user is not, so
+        # hand the tree over for the build and take it back for cache/upload.
+        run: |
+          sudo chown -R 1000:1000 "$HOME/openwrt"
+          docker run --rm \
+            -v "$HOME/openwrt:/work" \
+            -v "$PWD/config:/opt/config:ro" \
+            -v "$PWD/scripts:/opt/scripts:ro" \
+            -e SEED_FILE="$SEED_FILE" \
+            -u 1000:1000 -w /work \
+            openwrt-builder-modern bash /opt/scripts/_inner-build-16m.sh
+          sudo chown -R "$(id -u):$(id -g)" "$HOME/openwrt"
+
+      - name: Collect artifacts
+        run: |
+          OUT="$HOME/openwrt/bin/targets/ath79/tiny"
+          mkdir -p out
+          cp "$OUT"/openwrt-*tl-wr941-v4-16m*-factory.bin out/
+          cp "$OUT"/openwrt-*tl-wr941-v4-16m*-sysupgrade.bin out/
+          cp "$OUT"/*.manifest out/
+          cp "$OUT"/config.buildinfo out/ 2>/dev/null || true
+          (cd out && sha256sum * > SHA256SUMS)
+          ls -lh out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.DEVICE_NAME }}-${{ env.OPENWRT_TAG }}
+          path: out/
+
+      - name: Publish release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.OPENWRT_TAG }}-${{ env.DEVICE_NAME }}
+          name: OpenWrt ${{ env.OPENWRT_TAG }} — TL-WR941ND v4 (16M)
+          files: out/*
+          body: |
+            Custom 16MB build for the flash-modded TL-WR941ND v4
+            (`tplink_tl-wr941-v4-16m`, ath79/tiny, seed `${{ env.SEED_FILE }}`).
+
+            **Only for the 16MB (W25Q128-class) flash mod — never flash the
+            stock 4MB device with this.** Upgrade from a running 16M build:
+            `sysupgrade` with settings kept, using the `-sysupgrade.bin` image.
+            Verify `SHA256SUMS` first; optionally cross-check against a local
+            podman build of the same tag.
