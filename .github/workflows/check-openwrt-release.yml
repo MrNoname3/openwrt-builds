@@ -1,0 +1,93 @@
+# Watch OpenWrt release tags and open a bump PR when a newer patch release
+# appears in the series we are pinned to (e.g. v25.12.4 -> v25.12.5).
+#
+# - Same-series bump: updates OPENWRT_TAG in ci/*.env, opens a PR, and manually
+#   dispatches the build workflow on the PR branch (a GITHUB_TOKEN-created PR
+#   does not trigger pull_request workflows by itself).
+# - New series (e.g. v26.x): opens an ISSUE instead of a PR -- a series jump
+#   needs a manual DTS/seed review before any build (see the 24.10 -> 25.12
+#   nvmem-layout breakage).
+#
+# Requires repo setting: Settings -> Actions -> General ->
+# "Allow GitHub Actions to create and approve pull requests".
+
+name: check-openwrt-release
+
+on:
+  schedule:
+    - cron: '17 6 * * 1' # Monday 06:17 UTC, weekly
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for newer OpenWrt tags
+        id: check
+        run: |
+          . ci/wr941nd-v4-16m.env
+          series="${OPENWRT_TAG%.*}" # v25.12.4 -> v25.12
+
+          # Final-release tags only (vX.Y.Z, no -rc), sorted by version.
+          tags="$(git ls-remote --tags https://github.com/openwrt/openwrt.git 'refs/tags/v*' \
+                  | awk '{print $2}' | sed 's|refs/tags/||' | grep -v '\^{}$' \
+                  | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V)"
+
+          latest_in_series="$(printf '%s\n' "$tags" | grep -F "$series." | tail -1 || true)"
+          latest_overall="$(printf '%s\n' "$tags" | tail -1)"
+          echo "pinned=$OPENWRT_TAG in-series=$latest_in_series overall=$latest_overall"
+
+          if [ -n "$latest_in_series" ] && [ "$latest_in_series" != "$OPENWRT_TAG" ]; then
+            sed -i "s/^OPENWRT_TAG=.*/OPENWRT_TAG=$latest_in_series/" ci/wr941nd-v4-16m.env
+            echo "bump=yes" >> "$GITHUB_OUTPUT"
+            echo "new_tag=$latest_in_series" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -n "$latest_overall" ] && [ "${latest_overall%.*}" != "$series" ]; then
+            echo "new_series=${latest_overall%.*}" >> "$GITHUB_OUTPUT"
+            echo "new_series_tag=$latest_overall" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open bump PR
+        id: pr
+        if: steps.check.outputs.bump == 'yes'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: bump/openwrt-${{ steps.check.outputs.new_tag }}
+          delete-branch: true
+          commit-message: 'ci: bump OpenWrt to ${{ steps.check.outputs.new_tag }}'
+          title: 'Bump OpenWrt to ${{ steps.check.outputs.new_tag }}'
+          body: |
+            A new OpenWrt release is available in the pinned series.
+
+            This PR updates `OPENWRT_TAG` in `ci/wr941nd-v4-16m.env`. A build of
+            this branch is dispatched automatically — check its result under the
+            Actions tab before merging. Merging to `master` rebuilds and
+            publishes a Release with the new images.
+
+      - name: Dispatch build on the PR branch
+        if: steps.check.outputs.bump == 'yes' && steps.pr.outputs.pull-request-operation != 'none'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run build.yml -R "$GITHUB_REPOSITORY" \
+            --ref "bump/openwrt-${{ steps.check.outputs.new_tag }}"
+
+      - name: Open new-series issue
+        if: steps.check.outputs.new_series != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="New OpenWrt series available: ${{ steps.check.outputs.new_series }}"
+          if [ -z "$(gh issue list -R "$GITHUB_REPOSITORY" --state open \
+                     --search "\"$title\" in:title" --json number --jq '.[0].number')" ]; then
+            gh issue create -R "$GITHUB_REPOSITORY" --title "$title" --body \
+              "Latest tag: ${{ steps.check.outputs.new_series_tag }}. Not auto-bumped: a series jump needs a manual DTS + seed review (kernel/nvmem changes can break the custom 16M device) before switching the pin in ci/wr941nd-v4-16m.env."
+          fi

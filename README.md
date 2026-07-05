@@ -143,6 +143,42 @@ SHA-1-et (lásd [`ssh-legacy`](#) wrapper). A jelenlegi eszköz feltérképezve:
   futtatható **mai** OpenWRT (pl. 24.10). Ehhez ebben a környezetben elég az
   `OPENWRT_TAG`-et átállítani és a DTS-patcht a forrásfába tenni.
 
+## CI — automatikus build GitHub Actions-szel
+
+A repo (privát, `MrNoname3/openwrt-builds`) CI-je **ugyanazt a buildet** futtatja a
+felhőben, mint a helyi `scripts/build-16m.sh`: ugyanaz a `Containerfile.modern`
+konténer, ugyanaz a `_inner-build-16m.sh`, ugyanaz a seed. Így a helyi podman-build
+és a CI-build kimenete közvetlenül összevethető (supply-chain keresztellenőrzés).
+
+**Fájlok:**
+
+- `ci/wr941nd-v4-16m.env` — az eszköz pinjei: `OPENWRT_TAG` (pontos OpenWRT release),
+  `SEED_FILE`, `DEVICE_NAME`.
+- `.github/workflows/build.yml` — a build: PR-en és `master` pushon fut, ha
+  build-releváns fájl változik (`ci/`, `config/`, `scripts/`, `Containerfile.modern`).
+  `master`-ön sikeres build után **Release**-t publikál
+  (`<tag>-wr941nd-v4-16m`, benne factory + sysupgrade + manifest + SHA256SUMS).
+  A **FULLFLASH szándékosan nem** készül CI-ben: ahhoz az eszköz-egyedi
+  u-boot/art dump kell (MAC-kel), ami csak a helyi backupban él.
+- `.github/workflows/check-openwrt-release.yml` — hetente (hétfő 06:17 UTC) nézi az
+  OpenWRT tag-eket:
+  - **azonos sorozaton belüli** új kiadás (pl. v25.12.4 → v25.12.5): PR-t nyit a
+    bumppal, és elindítja rá a buildet → a PR maga a kanári, merge után jön a Release;
+  - **új sorozat** (pl. v26.x): csak **issue**-t nyit — sorozatváltás előtt kézi
+    DTS/seed-ellenőrzés kell (lásd a 24.10 → 25.12 nvmem-layout törést).
+
+**Frissítési folyamat:** bump-PR érkezik → Actions fül: zöld a branch-build? →
+merge → Release → a sysupgrade image letöltése, SHA256 ellenőrzés →
+`sysupgrade` a routeren (beállítások megtartásával).
+
+**Egyszeri repo-beállítás:** Settings → Actions → General →
+„Allow GitHub Actions to create and approve pull requests" bekapcsolása
+(enélkül a bump-PR létrehozása hibára fut).
+
+**Korlátok:** privát repónál havi 2000 ingyenes Actions-perc van; egy teljes build
+~2–3 óra (≈120–180 perc), tehát havi néhány build bőven belefér. A `dl/` cache-elve
+van, a toolchain minden futáskor újrafordul.
+
 ## Üzemeltetés / hibakeresés (telepített AP)
 
 ### Spontán újraindulás soros konzol + SysRq miatt (FONTOS)
