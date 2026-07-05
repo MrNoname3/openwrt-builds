@@ -1,214 +1,222 @@
-# OpenWRT build környezet — TP-Link TL-WR941ND v4
+# OpenWRT build environment — TP-Link TL-WR941ND v4
 
-Podman-alapú, **rootless**, konténerizált OpenWRT buildroot a TL-WR941ND **v4**
-routerhez (Atheros AR7240, `ar71xx` target, `tiny` subtarget).
+Podman-based, **rootless**, containerized OpenWRT buildroot for the TL-WR941ND **v4**
+router (Atheros AR7240, `ar71xx` target, `tiny` subtarget).
 
-A hostra **semmit nem telepítünk** — minden ebben a mappában és a Podman saját
-konténer-tárolójában él.
+**Nothing is installed on the host** — everything lives in this folder and in
+Podman's own container storage.
 
-> ⚠️ **Fontos — a build-fa NEM ebben a mappában van.** A teljes OpenWRT forrás-/build-fa
-> ~9 GB és 300 000+ apró fájl. Mivel ez a `Documents` mappa egy **szinkronizált
-> felhő-Drive** alatt van, a build-fa **szándékosan kívül** lakik:
-> `~/.local/share/openwrt-wr941nd/src` (a `.local/share` nincs a Drive alatt).
-> Így a Drive **csak a kis, fontos fájlokat és a végleges binárisokat** (`firmware/`)
-> szinkronizálja. A helyét a `OPENWRT_SRC` környezeti változóval bárhová átteheted:
-> `OPENWRT_SRC=/path/to/src ./scripts/fw-build.sh`.
+> ⚠️ **Important — the build tree is NOT in this folder.** The full OpenWRT
+> source/build tree is ~9 GB and 300,000+ small files. Since this `Documents`
+> folder sits under a **synced cloud drive**, the build tree deliberately lives
+> **outside**: `~/.local/share/openwrt-wr941nd/src` (`.local/share` is not under
+> the drive). This way the drive only syncs **the small, important files and the
+> final binaries** (`firmware/`). You can move it anywhere with the
+> `OPENWRT_SRC` environment variable: `OPENWRT_SRC=/path/to/src ./scripts/fw-build.sh`.
 
-## Cél (fázisok)
+## Goal (phases)
 
-1. **(jelen)** Forrásból reprodukálni a routeren most futó firmware-t:
+1. **(current)** Reproduce from source the firmware currently running on the router:
    `openwrt-18.06.9-ar71xx-tiny-tl-wr941nd-v4-squashfs-factory.bin`.
-2. Csomagok/modulok kivétele (a router csak **AP módot** kell tudjon) — `make menuconfig`.
-3. Flash bővítés **16MB**-ra (Winbond **W25Q128**) + RAM 64MB, és újabb OpenWRT
-   (ath79, pl. 24.10) egyedi partíciós/DTS layouttal.
+2. Remove packages/modules (the router only needs **AP mode**) — `make menuconfig`.
+3. Flash upgrade to **16MB** (Winbond **W25Q128**) + 64MB RAM, and a newer OpenWRT
+   (ath79, e.g. 24.10) with a custom partition/DTS layout.
 
-## Előfeltétel
+## Prerequisites
 
-- Rootless **Podman** a hoston (`podman --version`).
-- A scriptek automatikusan felismerik, ha a VS Code **Flatpak** termináljából futnak,
-  és olyankor `flatpak-spawn --host podman`-t használnak. Host-terminálból sima
-  `podman`-nal mennek.
-- Lemez: ~10 GB a `src/`-nek. Első build: kb. 20–60 perc (CPU-tól függ).
+- Rootless **Podman** on the host (`podman --version`).
+- The scripts auto-detect when they run from the VS Code **Flatpak** terminal and
+  use `flatpak-spawn --host podman` in that case. From a host terminal they use
+  plain `podman`.
+- Disk: ~10 GB for `src/`. First build: about 20–60 minutes (CPU-dependent).
 
-## Használat
+## Usage
 
 ```bash
 cd ~/Documents/openwrt-wr941nd
 
-# 1) Konténer-image megépítése (egyszer, ill. ha a Containerfile változik)
+# 1) Build the container image (once, or when the Containerfile changes)
 ./scripts/img-build.sh
 
-# 2) Firmware fordítása (forrásklón + feeds + defconfig + build)
+# 2) Build the firmware (source clone + feeds + defconfig + build)
 ./scripts/fw-build.sh
-#   JOBS=4 ./scripts/fw-build.sh          # kevesebb párhuzamos job
-#   OPENWRT_TAG=v19.07.10 ./scripts/fw-build.sh   # másik tag (3. fázis)
+#   JOBS=4 ./scripts/fw-build.sh          # fewer parallel jobs
+#   OPENWRT_TAG=v19.07.10 ./scripts/fw-build.sh   # different tag (phase 3)
 
-# címkézett kimeneti mappa (nem írja felül a korábbit)
+# labeled output folder (does not overwrite previous builds)
 BUILD_LABEL=ap-only ./scripts/fw-build.sh
 
-# 3) Interaktív shell a konténerben (pl. csomagok kivétele a 2. fázisban)
+# 3) Interactive shell in the container (e.g. removing packages in phase 2)
 ./scripts/shell.sh
-#   majd: cd openwrt && make menuconfig
+#   then: cd openwrt && make menuconfig
 ```
 
-### Eredmény
-A build a friss image-eket a forrásfából **automatikusan átmásolja egy címkézett,
-nem felülíródó almappába**:
+### Output
+The build **automatically copies** the fresh images from the source tree into a
+labeled, non-overwriting subfolder:
 ```
-firmware/built/<címke>/
+firmware/built/<label>/
   openwrt-ar71xx-tiny-tl-wr941nd-v4-squashfs-factory.bin
   openwrt-ar71xx-tiny-tl-wr941nd-v4-squashfs-sysupgrade.bin
   openwrt-ar71xx-tiny-device-tl-wr941nd-v4.manifest
 ```
-- A `<címke>` alapból `<verzió>-<időbélyeg>` (pl. `18.06.9-20260601-224500`), vagy add
-  meg magad: `BUILD_LABEL=ap-only ./scripts/fw-build.sh`. Így **minden build megmarad**,
-  egy következő nem írja felül az előzőt.
-- A **factory.bin** a gyári TP-Link webfelületről történő első telepítéshez.
-- A **sysupgrade.bin** egy már OpenWRT-t futtató eszköz frissítéséhez (LuCI / `sysupgrade`).
-- A gyári-ekvivalens 18.06.9 build itt van: `firmware/built/18.06.9-stock-equivalent/`.
+- `<label>` defaults to `<version>-<timestamp>` (e.g. `18.06.9-20260601-224500`), or
+  set it yourself: `BUILD_LABEL=ap-only ./scripts/fw-build.sh`. This way **every build
+  is kept**; a later one never overwrites an earlier one.
+- **factory.bin** is for the first install from the stock TP-Link web UI.
+- **sysupgrade.bin** is for updating a device already running OpenWRT (LuCI / `sysupgrade`).
+- The stock-equivalent 18.06.9 build lives at `firmware/built/18.06.9-stock-equivalent/`.
 
-### Build variánsok és a kernel-tanulság
+### Build variants and the kernel lesson
 
-Másik seed-configgal másik image-et építhetsz a `SEED_FILE` változóval:
+You can build a different image from another seed config via the `SEED_FILE` variable:
 ```bash
 SEED_FILE=wr941nd-v4-18.06-ap.seed.config BUILD_LABEL=ap ./scripts/fw-build.sh
 ```
 
-> ⚠️ **Kernel-tanulság.** Ha egy seed olyan csomagot ad/vesz ki, ami **kernel-modult**
-> (`kmod-*`) érint (pl. `iptables`/`firewall` eltávolítása → netfilter kmod-ok kiesnek),
-> az megváltoztatja a kernel VERMAGIC-ot. Egy már megépített fában ettől a kernel-csomag
-> deszinkronizálódik az opkg-tól, és a `package/install` elhasal: *„Cannot satisfy …
-> kernel (= <hash>)"*. Ilyenkor add hozzá a `CLEAN=kernel`-t (kernel + kmod-ok tiszta
-> újrafordítása) vagy `CLEAN=all`-t (teljes clean, a toolchain marad):
+> ⚠️ **Kernel lesson.** If a seed adds/removes a package that touches a **kernel
+> module** (`kmod-*`) (e.g. removing `iptables`/`firewall` → netfilter kmods drop
+> out), the kernel VERMAGIC changes. In an already-built tree the kernel package
+> then desyncs from opkg and `package/install` fails: *"Cannot satisfy …
+> kernel (= <hash>)"*. In that case add `CLEAN=kernel` (clean rebuild of kernel +
+> kmods) or `CLEAN=all` (full clean, toolchain kept):
 > ```bash
-> CLEAN=kernel SEED_FILE=valami.seed.config ./scripts/fw-build.sh
+> CLEAN=kernel SEED_FILE=some.seed.config ./scripts/fw-build.sh
 > ```
-> Ezért a **pragmatikus AP** seed szándékosan NEM nyúl egyetlen kmod-hoz sem — csak
-> userspace daemont vesz ki (dnsmasq, odhcpd) —, így a kernel változatlan és a build stabil.
+> This is why the **pragmatic AP** seed deliberately does NOT touch any kmod — it
+> only removes userspace daemons (dnsmasq, odhcpd) — so the kernel stays unchanged
+> and the build is stable.
 
-## Felépítés
+## Layout
 
-| Fájl | Szerep |
-|------|--------|
-| [Containerfile](Containerfile) | Debian bullseye + OpenWRT 18.06 build-függőségek, `builder` user |
-| [config/wr941nd-v4-18.06.seed.config](config/wr941nd-v4-18.06.seed.config) | Seed `.config` — **gyári-ekvivalens** (LuCI + xt_CT); `make defconfig` egészíti ki |
-| [config/wr941nd-v4-18.06-ap.seed.config](config/wr941nd-v4-18.06-ap.seed.config) | Seed `.config` — **pragmatikus AP** (gyári mínusz dnsmasq/odhcpd; kernel változatlan) |
-| [scripts/img-build.sh](scripts/img-build.sh) | Konténer-image build |
-| [scripts/fw-build.sh](scripts/fw-build.sh) | Teljes, idempotens firmware build a konténerben |
-| [scripts/shell.sh](scripts/shell.sh) | Interaktív shell (menuconfig, hibakeresés) |
-| [scripts/clean.sh](scripts/clean.sh) | A (Drive-on kívüli) build-fa teljes kitakarítása, megerősítéssel; `--image`-dzsel a konténer-image is |
-| [scripts/router-backup.sh](scripts/router-backup.sh) | A futó router flash-partícióinak mentése SSH-n (3× ellenőrzéssel); `firmware/router-backup/<ts>/` |
-| [scripts/_inner-build.sh](scripts/_inner-build.sh) | A konténeren belül futó build-logika |
-| [scripts/_common.sh](scripts/_common.sh) | Podman-detektálás (host vagy flatpak) |
-| `firmware/` | Bináris gyűjtő (nem verziókezelt): `stock/` = gyári/ref dumpok, `built/<címke>/` = az általunk fordított image-ek, buildenként külön mappában |
+| File | Role |
+|------|------|
+| [Containerfile](Containerfile) | Debian bullseye + OpenWRT 18.06 build deps, `builder` user |
+| [config/wr941nd-v4-18.06.seed.config](config/wr941nd-v4-18.06.seed.config) | Seed `.config` — **stock-equivalent** (LuCI + xt_CT); completed by `make defconfig` |
+| [config/wr941nd-v4-18.06-ap.seed.config](config/wr941nd-v4-18.06-ap.seed.config) | Seed `.config` — **pragmatic AP** (stock minus dnsmasq/odhcpd; kernel unchanged) |
+| [scripts/img-build.sh](scripts/img-build.sh) | Container image build |
+| [scripts/fw-build.sh](scripts/fw-build.sh) | Full, idempotent firmware build in the container |
+| [scripts/shell.sh](scripts/shell.sh) | Interactive shell (menuconfig, debugging) |
+| [scripts/clean.sh](scripts/clean.sh) | Full cleanup of the (outside-the-drive) build tree, with confirmation; `--image` also removes the container image |
+| [scripts/router-backup.sh](scripts/router-backup.sh) | Backup of the running router's flash partitions over SSH (with 3× verification); `firmware/router-backup/<ts>/` |
+| [scripts/_inner-build.sh](scripts/_inner-build.sh) | Build logic running inside the container |
+| [scripts/_common.sh](scripts/_common.sh) | Podman detection (host or flatpak) |
+| `firmware/` | Binary collection (not version-controlled): `stock/` = factory/reference dumps, `built/<label>/` = our built images, one folder per build |
 
-## Megjegyzések
+## Notes
 
-- **„Ugyanaz a FW”** itt *funkcionálisan azonosat* jelent: ugyanaz a verzió (18.06.9),
-  target (`ar71xx`), subtarget (`tiny`), profil (`tl-wr941nd-v4`) és az alapértelmezett
-  csomagkészlet. A **bit-pontos** egyezéshez a toolchain és az időbélyegek pinnelése is
-  kellene (reproducible build), ami nem cél ebben a fázisban.
-- A buildroot **nem fordít root-ként** — ezért `--userns=keep-id` + nem-root `builder`
-  user. A `src/`-be írt fájlok a hoston a te uid-eddel (`attila`) jönnek létre.
-- A `src/openwrt/dl/`, `build_dir/`, `staging_dir/` a `src/`-ben marad, így az
-  újrafordítás gyors (a letöltött forrásokat és a lefordított toolchaint újrahasználja).
+- **"The same FW"** here means *functionally identical*: same version (18.06.9),
+  target (`ar71xx`), subtarget (`tiny`), profile (`tl-wr941nd-v4`) and the default
+  package set. **Bit-exact** equality would also require pinning the toolchain and
+  timestamps (reproducible build), which is not a goal in this phase.
+- The buildroot **does not build as root** — hence `--userns=keep-id` + the non-root
+  `builder` user. Files written into `src/` are created on the host with your uid
+  (`attila`).
+- `src/openwrt/dl/`, `build_dir/` and `staging_dir/` stay in `src/`, so rebuilds are
+  fast (downloaded sources and the compiled toolchain are reused).
 
-## Router mentés (SSH, chip-kiolvasás nélkül)
+## Router backup (SSH, without reading the chip)
 
-A `scripts/router-backup.sh` a futó eszközről menti az `mtd` partíciókat (olvasás
-non-destruktív), 3× lefuttatva és sha256-tal összevetve; ha egyeznek, egy készletet tart meg.
+`scripts/router-backup.sh` backs up the `mtd` partitions from the running device
+(reading is non-destructive), running 3× and comparing sha256; if they match, one
+set is kept.
 ```bash
 ./scripts/router-backup.sh                 # tplink-router, firmware/router-backup/<ts>/
-./scripts/router-backup.sh my-host /út      # más host/cél
-RUNS=5 ./scripts/router-backup.sh           # több ellenőrző menet
+./scripts/router-backup.sh my-host /path    # different host/destination
+RUNS=5 ./scripts/router-backup.sh           # more verification passes
 ```
-Régi dropbearhez a `~/.ssh/openssl-allow-sha1.cnf` megléte esetén automatikusan engedi a
-SHA-1-et (lásd [`ssh-legacy`](#) wrapper). A jelenlegi eszköz feltérképezve:
+For old dropbear it automatically allows SHA-1 if `~/.ssh/openssl-allow-sha1.cnf`
+exists (see the [`ssh-legacy`](#) wrapper). The current device, mapped out:
 
-- **Flash chip:** Winbond **W25Q32** (4 MB) → a cél **W25Q128** (16 MB), ugyanaz a család.
-- **Partíciók (4 MB):** `u-boot` @0x000000 (128K) · `firmware`=kernel+rootfs @0x020000 (≈3,99 MB)
-  · `art` @0x3F0000 (64K). A `firmware` átfedi a `kernel`+`rootfs` nézeteket.
-- Az **`art`** (kalibráció) **eszköz-egyedi** — a 16MB-os chipre a végére (0xFF0000) kell.
+- **Flash chip:** Winbond **W25Q32** (4 MB) → target is **W25Q128** (16 MB), same family.
+- **Partitions (4 MB):** `u-boot` @0x000000 (128K) · `firmware`=kernel+rootfs @0x020000 (≈3.99 MB)
+  · `art` @0x3F0000 (64K). `firmware` overlaps the `kernel`+`rootfs` views.
+- The **`art`** (calibration) partition is **device-unique** — on the 16MB chip it goes
+  at the end (0xFF0000).
 
-## 3. fázis — 16MB flash (W25Q128) — vázlat
+## Phase 3 — 16MB flash (W25Q128) — outline
 
-- A jelenlegi chip helyére **Winbond W25Q128** (16MB) kerül. A flash-t ki kell olvasni
-  (flashrom + CH341A vagy Raspberry Pi + SOIC-csipesz), és **meg kell őrizni** az
-  `u-boot` (0x0) és az **ART/kalibrációs** partíciót (a WiFi rádió kalibrációja eszköz-
-  egyedi!).
-- Mai OpenWRT-ben a WR941ND a **`ath79`** targetre került. A 16MB-os flashhez a
-  készülék **DTS**-ében (device tree) kell átírni a partíciós layoutot (a firmware/
-  rootfs partíció felső határát kitolni 16MB-ig, az ART-ot a flash végére igazítani).
-- 16MB flash + 64MB RAM mellett a „4MB/32MB nem elég” figyelmeztetés megszűnik, így
-  futtatható **mai** OpenWRT (pl. 24.10). Ehhez ebben a környezetben elég az
-  `OPENWRT_TAG`-et átállítani és a DTS-patcht a forrásfába tenni.
+- The current chip is replaced with a **Winbond W25Q128** (16MB). The flash must be
+  read out (flashrom + CH341A or Raspberry Pi + SOIC clip), and the `u-boot` (0x0)
+  and **ART/calibration** partitions must be **preserved** (the WiFi radio
+  calibration is device-unique!).
+- In current OpenWRT the WR941ND moved to the **`ath79`** target. For the 16MB flash
+  the partition layout must be rewritten in the device's **DTS** (device tree):
+  extend the firmware/rootfs partition's upper bound to 16MB, move ART to the end of
+  the flash.
+- With 16MB flash + 64MB RAM the "4MB/32MB not enough" warning goes away, so a
+  **current** OpenWRT (e.g. 24.10) can run. In this environment that only takes
+  changing `OPENWRT_TAG` and dropping the DTS patch into the source tree.
 
-## CI — automatikus build GitHub Actions-szel
+## CI — automated builds with GitHub Actions
 
-A repo (privát, `MrNoname3/openwrt-builds`) CI-je **ugyanazt a buildet** futtatja a
-felhőben, mint a helyi `scripts/build-16m.sh`: ugyanaz a `Containerfile.modern`
-konténer, ugyanaz a `_inner-build-16m.sh`, ugyanaz a seed. Így a helyi podman-build
-és a CI-build kimenete közvetlenül összevethető (supply-chain keresztellenőrzés).
+The repo's (private, `MrNoname3/openwrt-builds`) CI runs **the same build** in the
+cloud as the local `scripts/build-16m.sh`: same `Containerfile.modern` container,
+same `_inner-build-16m.sh`, same seed. So the local podman build and the CI build
+outputs are directly comparable (supply-chain cross-check).
 
-**Fájlok:**
+**Files:**
 
-- `ci/wr941nd-v4-16m.env` — az eszköz pinjei: `OPENWRT_TAG` (pontos OpenWRT release),
+- `ci/wr941nd-v4-16m.env` — the device pins: `OPENWRT_TAG` (exact OpenWRT release),
   `SEED_FILE`, `DEVICE_NAME`.
-- `.github/workflows/build.yml` — a build: PR-en és `master` pushon fut, ha
-  build-releváns fájl változik (`ci/`, `config/`, `scripts/`, `Containerfile.modern`).
-  `master`-ön sikeres build után **Release**-t publikál
-  (`<tag>-wr941nd-v4-16m`, benne factory + sysupgrade + manifest + SHA256SUMS).
-  A **FULLFLASH szándékosan nem** készül CI-ben: ahhoz az eszköz-egyedi
-  u-boot/art dump kell (MAC-kel), ami csak a helyi backupban él.
-- `.github/workflows/check-openwrt-release.yml` — hetente (hétfő 06:17 UTC) nézi az
-  OpenWRT tag-eket:
-  - **azonos sorozaton belüli** új kiadás (pl. v25.12.4 → v25.12.5): PR-t nyit a
-    bumppal, és elindítja rá a buildet → a PR maga a kanári, merge után jön a Release;
-  - **új sorozat** (pl. v26.x): csak **issue**-t nyit — sorozatváltás előtt kézi
-    DTS/seed-ellenőrzés kell (lásd a 24.10 → 25.12 nvmem-layout törést).
+- `.github/workflows/build.yml` — the build: runs on PRs and on `master` pushes
+  when a build-relevant file changes (`ci/`, `config/`, `scripts/`,
+  `Containerfile.modern`). After a successful build on `master` it publishes a
+  **Release** (`<tag>-wr941nd-v4-16m`, containing factory + sysupgrade + manifest +
+  SHA256SUMS). The **FULLFLASH image is deliberately NOT** built in CI: it needs
+  the device-unique u-boot/art dumps (with the MAC), which live only in the local
+  backup.
+- `.github/workflows/check-openwrt-release.yml` — checks the OpenWRT tags weekly
+  (Monday 06:17 UTC):
+  - **new release within the same series** (e.g. v25.12.4 → v25.12.5): opens a PR
+    with the bump and dispatches a build on it → the PR itself is the canary; the
+    Release comes after the merge;
+  - **new series** (e.g. v26.x): only opens an **issue** — a series jump needs a
+    manual DTS/seed review first (see the 24.10 → 25.12 nvmem-layout breakage).
 
-**Frissítési folyamat:** bump-PR érkezik → Actions fül: zöld a branch-build? →
-merge → Release → a sysupgrade image letöltése, SHA256 ellenőrzés →
-`sysupgrade` a routeren (beállítások megtartásával).
+**Update flow:** bump PR arrives → Actions tab: is the branch build green? →
+merge → Release → download the sysupgrade image, verify SHA256 →
+`sysupgrade` on the router (keeping settings).
 
-**Egyszeri repo-beállítás:** Settings → Actions → General →
-„Allow GitHub Actions to create and approve pull requests" bekapcsolása
-(enélkül a bump-PR létrehozása hibára fut).
+**One-time repo setting:** Settings → Actions → General → enable
+"Allow GitHub Actions to create and approve pull requests"
+(without it, creating the bump PR fails).
 
-**Korlátok:** privát repónál havi 2000 ingyenes Actions-perc van; egy teljes build
-~2–3 óra (≈120–180 perc), tehát havi néhány build bőven belefér. A `dl/` cache-elve
-van, a toolchain minden futáskor újrafordul.
+**Limits:** a private repo has 2000 free Actions minutes per month; a full build is
+~2–3 hours (≈120–180 minutes), so a few builds a month fit comfortably. `dl/` is
+cached; the toolchain is rebuilt on every run.
 
-## Üzemeltetés / hibakeresés (telepített AP)
+## Operations / troubleshooting (deployed AP)
 
-### Spontán újraindulás soros konzol + SysRq miatt (FONTOS)
+### Spontaneous reboot due to serial console + SysRq (IMPORTANT)
 
-Tünet: az AP **magától újraindul** (a `dmesg`/`logread` csak
-`Watchdog has previously reset the system`-et mutat, **nincs** OOM/panic/crash). Az
-újraindulás jellemzően a soros adapterhez köthető — vagy a **be-/kihúzáskor**, vagy ha a
-beforrasztott soros **pinheader üresen, csatlakoztatás nélkül a panelen marad**.
+Symptom: the AP **reboots on its own** (`dmesg`/`logread` only shows
+`Watchdog has previously reset the system`, **no** OOM/panic/crash). The reboot is
+typically tied to the serial adapter — either on **plug/unplug**, or when the
+soldered-on serial **pin header is left empty, unconnected, on the board**.
 
-Ok: a kernel `console=ttyS0,115200`-val fut, és a **SysRq alapból engedélyezett**
-(`/proc/sys/kernel/sysrq = 1`). Egy **lebegő/zajos soros vonal** (üres header, vagy
-hot-unplug) **BREAK jelet** generálhat, amit a kernel **SysRq-parancsnak** értelmez
-(reboot/crash/hang). A `wmac`/AR7240 watchdog (timeout **30 mp**, etetés 5 mp-enként)
-ilyenkor ~25–30 mp múlva resetel, ha a rendszer beragadt.
+Cause: the kernel runs with `console=ttyS0,115200`, and **SysRq is enabled by
+default** (`/proc/sys/kernel/sysrq = 1`). A **floating/noisy serial line** (empty
+header, or hot-unplug) can generate a **BREAK signal**, which the kernel interprets
+as a **SysRq command** (reboot/crash/hang). The `wmac`/AR7240 watchdog (timeout
+**30 s**, fed every 5 s) then resets after ~25–30 s if the system got stuck.
 
-Megoldás (alkalmazva a telepített eszközön, perzisztens a `/etc/sysctl.conf`-ban):
+Fix (applied on the deployed device, persistent in `/etc/sysctl.conf`):
 ```sh
-# runtime + perzisztens
+# runtime + persistent
 echo 0 > /proc/sys/kernel/sysrq
 echo 'kernel.sysrq=0' >> /etc/sysctl.conf
 ```
-Ez headless AP-n **hátrány nélküli** (a SysRq csak debug-funkció; a soros konzol
-**kimenete** továbbra is megy). Ha valaha SysRq-debug kell, ideiglenesen vissza:
-`echo 1 > /proc/sys/kernel/sysrq`.
+On a headless AP this has **no downside** (SysRq is a debug-only feature; serial
+console **output** still works). If SysRq debugging is ever needed, re-enable
+temporarily: `echo 1 > /proc/sys/kernel/sysrq`.
 
-Továbbá: a soros adaptert **csak áramtalanított panelnél** dugd/húzd, vagy ha menet közben
-muszáj, a **GND-t kösd be elsőnek és húzd ki utolsónak**, a 3,3 V/TX vezetéket ne mozgasd
-(a megosztott tápon keletkező tranziens szintén watchdog-resetet okozhat).
+Also: plug/unplug the serial adapter **only with the board powered off**, or if it
+must happen live, **connect GND first and disconnect it last**, and don't touch the
+3.3 V/TX wires (a transient on the shared rail can also cause a watchdog reset).
 
-### RAM (32 MB) — szűkös, de elég
+### RAM (32 MB) — tight but sufficient
 
-24.10 + LuCI + 802.11r mellett ~7 MB szabad RAM. Nincs OOM, de kevés a tartalék; ha több
-fejhely kell, az **AP-only csomag-strip** (LuCI/uhttpd/ppp eltávolítása) felszabadít pár MB-ot.
+With 24.10 + LuCI + 802.11r there is ~7 MB free RAM. No OOM, but little headroom; if
+more is needed, the **AP-only package strip** (removing LuCI/uhttpd/ppp) frees up a
+few MB.
