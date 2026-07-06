@@ -22,6 +22,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  actions: write # gh workflow run (dispatching the build on the PR branch)
 
 jobs:
   check:
