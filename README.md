@@ -165,6 +165,11 @@ exists (see the [`ssh-legacy`](#) wrapper). The current device, mapped out:
 
 ## Phase 3 — 16MB flash (W25Q128) — outline
 
+> 📖 The mod has since been **done and documented**: see
+> [docs/hardware-mod.md](docs/hardware-mod.md) for the full flash + RAM
+> upgrade guide (layout, procedure, pitfalls). The outline below is kept as
+> the original plan.
+
 - The current chip is replaced with a **Winbond W25Q128** (16MB). The flash must be
   read out (flashrom + CH341A or Raspberry Pi + SOIC clip), and the `u-boot` (0x0)
   and **ART/calibration** partitions must be **preserved** (the WiFi radio
