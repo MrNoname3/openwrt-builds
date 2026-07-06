@@ -10,13 +10,13 @@
 		}
 	],
 	"settings": {
-		// The multi-GB OpenWrt source tree and firmware blobs live outside the
-		// repo; hide the safety-net ignores and build noise from the explorer
-		// and search so the workspace stays snappy.
+		// The multi-GB OpenWrt source tree lives outside the repo; hide only the
+		// safety-net src/ mount point from the explorer. firmware/ (built
+		// images, backups) stays VISIBLE but is kept out of search and the
+		// file watcher below so the workspace stays snappy.
 		"files.exclude": {
 			"**/.git": true,
-			"src": true,
-			"firmware": true
+			"src": true
 		},
 		"search.exclude": {
 			"src": true,
