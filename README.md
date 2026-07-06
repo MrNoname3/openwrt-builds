@@ -6,13 +6,13 @@ router (Atheros AR7240, `ar71xx` target, `tiny` subtarget).
 **Nothing is installed on the host** — everything lives in this folder and in
 Podman's own container storage.
 
-> ⚠️ **Important — the build tree is NOT in this folder.** The full OpenWRT
-> source/build tree is ~9 GB and 300,000+ small files. Since this `Documents`
-> folder sits under a **synced cloud drive**, the build tree deliberately lives
-> **outside**: `~/.local/share/openwrt-wr941nd/src` (`.local/share` is not under
-> the drive). This way the drive only syncs **the small, important files and the
-> final binaries** (`firmware/`). You can move it anywhere with the
-> `OPENWRT_SRC` environment variable: `OPENWRT_SRC=/path/to/src ./scripts/fw-build.sh`.
+> ⚠️ **Important — the build tree is NOT inside the repo.** The full OpenWRT
+> source/build tree is ~9 GB and 300,000+ small files, so it deliberately lives
+> **outside** the working copy, at `~/.local/share/openwrt-wr941nd/` by default.
+> This matters especially when the repo clone sits under a **synced cloud-drive
+> folder** — the drive then only syncs the small tracked files and the final
+> binaries (`firmware/`, not in git), never the build tree. Relocate it with
+> `OPENWRT_SRC_ROOT` (new flow) or `OPENWRT_SRC` (legacy flow).
 
 ## Goal (phases)
 
@@ -62,7 +62,7 @@ exists, since the u-boot/art dumps are device-unique and not in git).
 ### Legacy 18.06 flow (phase 1–2, ar71xx)
 
 ```bash
-cd ~/Documents/openwrt-wr941nd
+cd <repo clone>
 
 # 1) Build the container image (once, or when the Containerfile changes)
 ./scripts/img-build.sh
@@ -179,7 +179,7 @@ exists (see the [`ssh-legacy`](#) wrapper). The current device, mapped out:
 
 ## CI — automated builds with GitHub Actions
 
-The repo's (private, `MrNoname3/openwrt-builds`) CI runs **the same build** in the
+This repo's CI runs **the same build** in the
 cloud as the local `scripts/build-16m.sh`: same `Containerfile.modern` container,
 same `_inner-build-16m.sh`, same seed. So the local podman build and the CI build
 outputs are directly comparable (supply-chain cross-check).
@@ -277,3 +277,9 @@ must happen live, **connect GND first and disconnect it last**, and don't touch 
 With 24.10 + LuCI + 802.11r there is ~7 MB free RAM. No OOM, but little headroom; if
 more is needed, the **AP-only package strip** (removing LuCI/uhttpd/ppp) frees up a
 few MB.
+
+## License
+
+**GPL-2.0** (see [LICENSE](LICENSE)) — the custom DTS and device definition under
+`config/` are derived from OpenWrt's GPL-2.0 sources, and the rest of the repo
+follows the same license for simplicity.
