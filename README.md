@@ -191,6 +191,29 @@ merge → Release → download the sysupgrade image, verify SHA256 →
 ~2–3 hours (≈120–180 minutes), so a few builds a month fit comfortably. `dl/` is
 cached; the toolchain is rebuilt on every run.
 
+### Reproducibility (supply-chain cross-check)
+
+Verified 2026-07-06 on v25.12.4: a clean local build and the CI build are
+**byte-identical** — kernel and every rootfs file — except a known-benign
+6-byte residue of build timestamps in two packages that ignore
+`SOURCE_DATE_EPOCH` (`usr/bin/apk`: gzip MTIME of the embedded help blob;
+`libnftables.so`: two raw timestamps), plus their cascade into the apk db
+checksums and `scripts.tar.gz`. Two determinism fixes were needed to get there:
+
+- `CONFIG_KERNEL_BUILD_USER/DOMAIN` pinned in the seed (otherwise the kernel
+  banner embeds the random container hostname);
+- the CI installs the **project apk signing keypair** from the
+  `APK_PRIVATE_KEY` / `APK_PUBLIC_KEY` Actions secrets (same
+  `private-key.pem` / `public-key.pem` as in the local tree root); without it
+  every tree generates its own key into `/etc/apk/keys/`.
+
+Compare any two same-tag images with:
+```bash
+scripts/repro-compare.sh local-sysupgrade.bin ci-sysupgrade.bin
+```
+It PASSes only if the images match modulo the exact whitelisted residue —
+any other difference is a supply-chain red flag.
+
 ## Operations / troubleshooting (deployed AP)
 
 ### Spontaneous reboot due to serial console + SysRq (IMPORTANT)
