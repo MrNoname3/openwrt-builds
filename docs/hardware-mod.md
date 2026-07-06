@@ -1,72 +1,146 @@
 # TL-WR941ND v4 hardware mod: 4→16 MB flash, 32→64 MB RAM
 
-This documents the hardware upgrade that makes a TP-Link TL-WR941ND **v4**
-(Atheros AR7240 @ 400 MHz, ath9k `pci168c:002a` radio) capable of running
-**current OpenWrt** (25.12, kernel 6.12). Stock hardware — 4 MB SPI flash,
-32 MB RAM — stopped being usable after OpenWrt 18.06/19.07.
+This is the full guide for upgrading a TP-Link TL-WR941ND **v4** (Atheros
+AR7240 @ 400 MHz, ath9k `pci168c:002a` radio) so it can run **current
+OpenWrt** (25.12, kernel 6.12). Stock hardware — 4 MB SPI flash, 32 MB RAM —
+stopped being usable after OpenWrt 18.06/19.07.
 
 Both mods are **required** for the images this repo builds:
 
-| Mod | Stock | Upgraded | Why it is required |
-|-----|-------|----------|--------------------|
-| SPI flash | 4 MB (Winbond W25Q32, SOIC-8) | 16 MB W25Q128-class (this unit: XTX XT25F128B) | the 16M image simply does not fit in 4 MB |
-| RAM | 32 MB | 64 MB (single DDR1 chip, ×16 organization) | kernel 6.12 + LuCI on 32 MB OOM-reboots constantly (verified on this unit before the RAM mod) |
+| Mod | Stock | Upgraded | Why required |
+|-----|-------|----------|--------------|
+| SPI flash | 4 MB Winbond W25Q32 (SOIC-8) | 16 MB W25Q128-class (this unit: XTX XT25F128B) | the 16M image does not fit in 4 MB |
+| RAM | 32 MB | 64 MB (single ×16 DDR1 chip) | kernel 6.12 + LuCI on 32 MB OOM-reboots constantly (verified on this unit) |
 
-While the board is open, also consider **recapping**: this unit's aging
-electrolytics were replaced with 5× 470 µF/16 V — a common failure item on
-routers of this age.
+While the board is open, consider **recapping** too (this unit: 5× 470 µF/16 V).
 
-## Flash layout (16 MB)
+## The one fact everything revolves around
+
+Two regions of the original flash are **device-unique and irreplaceable**:
+
+| Region | Stock 4 MB location | New 16 MB location | Contents |
+|--------|--------------------:|-------------------:|----------|
+| `u-boot` | `0x000000` (128 KiB) | `0x000000` (unchanged) | bootloader **+ the device MAC** |
+| `art` | `0x3F0000` (64 KiB, *last* 64K of 4 MB) | `0xFF0000` (*last* 64K of 16 MB) | WiFi radio calibration |
+
+`art` always lives in the **last 64 KiB of the chip**, so on the bigger chip it
+**moves** — this is why a plain 1:1 copy of the old chip onto the new one would
+not work, and why the custom DTS exists. Lose `art` and the WiFi is gone for
+good; flash another unit's dump and you inherit its MAC and mis-calibration.
+
+## Step 1 — dump the original flash
+
+Do it **before touching anything**, ideally both ways:
+
+**a) Over SSH from the running router** (no soldering):
+
+```bash
+./scripts/router-backup.sh          # host alias + destination are parameters
+```
+
+It reads every `mtd` partition 3× and cross-checks sha256 (`RUNS=5` for more
+passes). Output lands in `firmware/router-backup/<timestamp>/`, one file per
+partition — the two that matter later:
 
 ```
-0x000000  u-boot    128 KiB   device-specific (contains the MAC!)
-0x020000  firmware  0xFD0000  kernel (OKLI/lzma) + squashfs rootfs + overlay
-0xFF0000  art        64 KiB   radio calibration -- DEVICE-UNIQUE, irreplaceable
+mtd0_u-boot.bin   (128 KiB)
+mtd4_art.bin      ( 64 KiB)     # partition number may differ per firmware
 ```
 
-The custom DTS (`config/ath79-24.10/ar7240_tplink_tl-wr941-v4-16m.dts`) and
-device definition (`tplink_tl-wr941-v4-16m.device.mk`) describe this layout;
-the build injects them into a stock OpenWrt tree (`scripts/_inner-build-16m.sh`).
+**b) Chip-off with a programmer** (CH341A + SOIC-8 clip, or Raspberry Pi):
 
-## Procedure (flash)
+```bash
+flashrom -p ch341a_spi -c W25Q32.V -r dump1.bin
+flashrom -p ch341a_spi -c W25Q32.V -r dump2.bin
+cmp dump1.bin dump2.bin            # two reads must be identical
+```
 
-1. **Back up the original flash before touching anything.** Two independent
-   ways, do both if possible:
-   - live router over SSH: `scripts/router-backup.sh` (reads all `mtd`
-     partitions 3× and cross-checks sha256);
-   - desoldered chip in a CH341A (or Raspberry Pi + SOIC clip) with
-     `flashrom`.
-2. Build the 16 MB firmware: `./scripts/build.sh` (see the README).
-3. Assemble the full 16 MB flash image — `scripts/build-16m.sh` does this
-   automatically when a backup exists under `firmware/router-backup/`:
-   your original **u-boot** at 0x0, the built firmware at 0x20000, your
-   original **art** at 0xFF0000, gaps 0xFF-filled.
-4. Write the new chip: `flashrom -p ch341a_spi -c <chip> -w full16-....bin`,
-   then read back and verify.
-5. Solder the new chip in (SOIC-8; hot air or drag soldering).
+> ⚠️ Cheap CH341A clones drive the data lines at **5 V** — fine for a one-off
+> read of a chip that is being replaced anyway, but do the 3.3 V mod (or use a
+> known-good programmer) before writing the **new** chip with it.
 
-> ⚠️ **The art partition is device-unique radio calibration and the u-boot
-> dump contains the device MAC.** Never flash another device's dump; if you
-> lose art, the WiFi is gone for good. This is also why the FULLFLASH image
-> is never published in CI releases — only factory/sysupgrade images are.
+## Step 2 — build the 16 MB firmware
 
-## Procedure (RAM)
+```bash
+JOBS=4 ./scripts/build.sh          # see the README for details
+```
 
-The AR7240 supports 64 MB with a single ×16 DDR1 chip; u-boot on this unit
-detected the new size without any modification ("DRAM: 64 MB").
+Output in `firmware/built/16m-<version>/`. Two image types come out of the
+OpenWrt recipe:
 
-Lesson from this unit: after the swap the router **hung right after the
+- `...-squashfs-factory.bin` — the full firmware-partition payload, **padded to
+  0xFD0000**. Despite the name it can NOT be installed from the stock TP-Link
+  web UI (stock firmware only exists on 4 MB chips); here it serves as the
+  building block for the full-chip image.
+- `...-squashfs-sysupgrade.bin` — for updating a router **already running** a
+  16M build (LuCI or `sysupgrade`, settings kept). This is what you use for
+  every update after the initial chip swap.
+
+## Step 3 — assemble the full-chip image (FULLFLASH)
+
+`scripts/build-16m.sh` (which `build.sh` calls) does this automatically when a
+backup exists under `firmware/router-backup/`:
+
+```
+0x000000  mtd0_u-boot.bin      (128 KiB, from YOUR backup)
+0x020000  ...-factory.bin      (0xFD0000)
+0xFF0000  mtd*_art*.bin        ( 64 KiB, from YOUR backup)
+gaps      0xFF                 (erased-flash filler)
+```
+
+Result: `firmware/built/16m-<version>/full16-wr941nd-v4.bin` (exactly 16 MiB)
+plus `SHA256SUMS`. This file is device-specific — it is deliberately never
+built in CI and never published in releases.
+
+## Step 4 — write the new chip
+
+```bash
+flashrom -p ch341a_spi -c XT25F128B -w full16-wr941nd-v4.bin   # -c per your chip
+```
+
+`flashrom -w` verifies after writing; for extra certainty read it back and
+compare:
+
+```bash
+flashrom -p ch341a_spi -c XT25F128B -r readback.bin
+cmp full16-wr941nd-v4.bin readback.bin
+```
+
+Then solder the chip in (SOIC-8; hot air or drag soldering).
+
+## Step 5 — RAM swap
+
+The AR7240 supports 64 MB as a single ×16 DDR1 chip; u-boot on this unit
+detected the new size with **no firmware/u-boot change** ("DRAM: 64 MB").
+
+Lesson from this unit: after the swap the boot **hung right after the
 `DRAM: 64 MB` line** with corrupted serial output — a bad joint on an address
 line. Rework every pin if boot stalls there; after re-soldering it booted
-cleanly. A serial console (soldered header, 115200 8N1) is essentially
-mandatory for diagnosing this stage — and read the README's SysRq warning
+cleanly.
+
+## Step 6 — first boot & checks
+
+A serial console (soldered header, 115200 8N1) is essentially mandatory for
+this stage — but read the SysRq warning in the README's Operations section
 before leaving the header attached.
 
-## After the mod
+Expected: u-boot banner → `DRAM: 64 MB` → kernel boot → OpenWrt on
+`192.168.1.1` (fresh config). Verify:
 
-- 25.12 runs comfortably: ~19 MB free RAM + ~17 MB cache with LuCI, HTTPS,
-  802.11r on a dumb-AP config; zram is deliberately NOT used (400 MHz CPU).
-- The board still reports `tplink,tl-wr941-v4`, so **never** use official
-  OpenWrt images or attended sysupgrade — their profile targets the stock
-  4 MB layout and would brick the device. Upgrade only with this repo's
-  `-sysupgrade.bin` images (settings survive) or full reflash via CH341A.
+```
+free            # ~59 MB total
+df -h /overlay  # ~10 MB overlay
+iwinfo          # radio up (art OK)
+```
+
+Then configure, or restore a config backup.
+
+## Updating later
+
+After the initial swap you never need the programmer again: every new release
+from this repo is flashed with the **sysupgrade** image (settings kept). The
+FULLFLASH path exists only for the initial swap and for disaster recovery.
+
+> ⚠️ The board still reports `tplink,tl-wr941-v4`, so **never** use official
+> OpenWrt images or attended sysupgrade — their profile targets the stock 4 MB
+> layout and would brick the device.
