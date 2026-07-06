@@ -118,11 +118,13 @@ jobs:
           name: OpenWrt ${{ env.OPENWRT_TAG }} — TL-WR941ND v4 (16M)
           files: out/*
           body: |
-            Custom 16MB build for the flash-modded TL-WR941ND v4
+            Custom 16MB build for the hardware-modded TL-WR941ND v4
             (`tplink_tl-wr941-v4-16m`, ath79/tiny, seed `${{ env.SEED_FILE }}`).
 
-            **Only for the 16MB (W25Q128-class) flash mod — never flash the
-            stock 4MB device with this.** Upgrade from a running 16M build:
+            **Requires BOTH hardware mods: 16MB flash (W25Q128-class) AND the
+            32→64MB RAM upgrade.** Never flash a stock device: the stock 4MB
+            flash cannot hold this image, and on the stock 32MB RAM OpenWrt
+            25.12 constantly OOM-reboots. Upgrade from a running 16M build:
             `sysupgrade` with settings kept, using the `-sysupgrade.bin` image.
             Verify `SHA256SUMS` first; optionally cross-check against a local
             podman build of the same tag.
