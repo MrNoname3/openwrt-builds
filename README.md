@@ -155,6 +155,11 @@ cloud as the local `scripts/build-16m.sh`: same `Containerfile.modern` container
 same `_inner-build-16m.sh`, same seed. So the local podman build and the CI build
 outputs are directly comparable (supply-chain cross-check).
 
+> ⚠️ **Hardware requirement.** The released 25.12 images need **BOTH** mods:
+> **16MB flash** (W25Q128-class) **and the 32→64MB RAM upgrade**. On the stock
+> 32MB RAM, OpenWrt 25.12 (kernel 6.12) constantly reboots with OOM — verified
+> on this device before the RAM mod. Never flash a stock 4MB/32MB unit.
+
 **Files:**
 
 - `ci/wr941nd-v4-16m.env` — the device pins: `OPENWRT_TAG` (exact OpenWRT release),
