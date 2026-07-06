@@ -32,6 +32,35 @@ Podman's own container storage.
 
 ## Usage
 
+### One-command build (recommended)
+
+`scripts/build.sh` builds **exactly what the CI builds**, driven by the same
+per-device pin file (`ci/<device>.env`: `OPENWRT_TAG` + `SEED_FILE`). On a
+fresh machine it bootstraps everything itself (blobless OpenWrt clone at the
+pinned tag, container image, build):
+
+```bash
+git clone https://github.com/MrNoname3/openwrt-builds.git
+cd openwrt-builds
+JOBS=4 ./scripts/build.sh          # JOBS=4 is the safe setting on a 15GB host
+```
+
+Knobs (all optional, no TTY needed — automation/AI friendly):
+
+| Variable | Meaning |
+|----------|---------|
+| `DEVICE=<name>` | which `ci/*.env` pin to build when several exist (menu on a TTY, listed error otherwise) |
+| `TAG=vX.Y.Z` | override the pinned OpenWrt tag |
+| `JOBS=N` | parallel jobs (default `nproc`) |
+| `OPENWRT_SRC_ROOT=dir` | where source trees live (default `~/.local/share/openwrt-wr941nd`) |
+| `DRY_RUN=1` | print the resolved plan (pin/tag/seed/tree), change nothing |
+
+Output lands in `firmware/built/16m-<version>/` (factory + sysupgrade +
+SHA256SUMS; the FULLFLASH image is assembled only where a router backup
+exists, since the u-boot/art dumps are device-unique and not in git).
+
+### Legacy 18.06 flow (phase 1–2, ar71xx)
+
 ```bash
 cd ~/Documents/openwrt-wr941nd
 
