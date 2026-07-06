@@ -79,11 +79,16 @@ jobs:
         # only diffs). The secrets hold the project keypair -- the same
         # private-key.pem / public-key.pem that sit in the local tree's root.
         # Skipped (build falls back to a fresh key) if the secret is not set.
-        if: ${{ secrets.APK_PRIVATE_KEY != '' }}
+        # NOTE: the secrets context is not allowed in step-level `if`, so the
+        # emptiness check happens in the shell instead.
         env:
           APK_PRIVATE_KEY: ${{ secrets.APK_PRIVATE_KEY }}
           APK_PUBLIC_KEY: ${{ secrets.APK_PUBLIC_KEY }}
         run: |
+          if [ -z "$APK_PRIVATE_KEY" ]; then
+            echo "no APK_PRIVATE_KEY secret; the build will generate a fresh key"
+            exit 0
+          fi
           printf '%s\n' "$APK_PRIVATE_KEY" > "$HOME/openwrt/private-key.pem"
           printf '%s\n' "$APK_PUBLIC_KEY" > "$HOME/openwrt/public-key.pem"
           echo "project signing key installed"
