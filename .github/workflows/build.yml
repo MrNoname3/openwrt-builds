@@ -133,7 +133,10 @@ jobs:
           path: out/
 
       - name: Publish release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        # Publish from master builds (push or manual dispatch), never from PRs
+        # -- a dispatch on master lets us re-release deliberately (e.g. after
+        # release-engineering fixes) without a dummy commit.
+        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.OPENWRT_TAG }}-${{ env.DEVICE_NAME }}
