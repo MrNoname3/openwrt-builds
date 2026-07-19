@@ -24,6 +24,12 @@
       "description": "Pin container base images by digest (reproducibility: a floating debian:bookworm tag is the weakest link of the supply chain)",
       "matchDatasources": ["docker"],
       "pinDigests": true
+    },
+    {
+      "description": "Base image major bumps (e.g. debian bookworm -> trixie) change the whole toolchain and need a deliberate, tested switch -- approval only",
+      "matchDatasources": ["docker"],
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
     }
   ]
 }
