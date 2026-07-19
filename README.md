@@ -82,25 +82,37 @@ u-boot/art dumps are device-unique and not in git — see the
 
 ## CI — automated builds and releases
 
-The CI runs the **same build** as `build.sh`: same `Containerfile.modern`
-container, same `_inner-build-16m.sh`, same seed, same pin file. Pieces:
+The **source of truth is a self-hosted Gitea instance**, push-mirrored to
+GitHub; GitHub Actions is the build + release executor (an OpenWrt build is
+too heavy for the Gitea box — and an *independent* build infrastructure is
+what makes the reproducibility cross-check meaningful). The CI runs the
+**same build** as `build.sh`: same `Containerfile.modern` container, same
+`_inner-build-16m.sh`, same seed, same pin file. Pieces:
 
 - **`ci/wr941nd-v4-16m.env`** — the single source of truth: `OPENWRT_TAG`
   (exact release), `SEED_FILE`, `DEVICE_NAME`. Both CI and `build.sh` read it.
-- **`.github/workflows/build.yml`** — builds on PRs and `master` pushes that
-  touch build-relevant paths; a `master` build publishes a **Release**
-  (`<tag>-wr941nd-v4-16m`: factory + sysupgrade + manifest + SHA256SUMS —
-  never the FULLFLASH).
-- **`.github/workflows/check-openwrt-release.yml`** — weekly (Mon 06:17 UTC)
-  tag watch: a new release **in the pinned series** → auto-PR with the bump +
-  a canary build on the branch; a **new series** (e.g. v26.x) → issue only,
-  because a series jump needs manual DTS/seed review first (the 24.10→25.12
-  nvmem-layout change is the precedent).
+- **`renovate.json`** — a self-hosted Renovate (daily) bumps the
+  `OPENWRT_TAG` pin from OpenWrt's release tags: a patch release in the
+  pinned series → auto-PR on Gitea; a **series jump** (e.g. v26.x) waits for
+  approval on the dependency dashboard, because it needs manual DTS/seed
+  review first (the 24.10→25.12 nvmem-layout change is the precedent).
+  Renovate also bumps the SHA-pinned GitHub Actions and digest-pins the
+  container base images.
+- **`.github/workflows/build.yml`** — a push to a `renovate/**` branch
+  (arriving via the mirror) runs a **canary build**; a `v*` **tag** push
+  builds and publishes the **Release** (`<tag>-wr941nd-v4-16m`: factory +
+  sysupgrade + manifest + SHA256SUMS — never the FULLFLASH). Plain `master`
+  pushes do not build.
+- **`scripts/tag-release.sh`** — run on master after merging a bump PR:
+  creates the release tag on Gitea; the mirror forwards it and GitHub
+  releases. (Tags must originate on Gitea — the push mirror prunes refs that
+  exist only on GitHub.)
 
-**Update flow:** bump PR arrives → branch build green? → merge → Release →
-download sysupgrade image, verify SHA256 → `sysupgrade` on the router
-(settings kept). Wall-clock cost: a full CI build is ~2 h; a private repo's
-2000 free monthly Actions minutes fit a few builds comfortably.
+**Update flow:** Renovate bump PR on Gitea → canary build on GitHub green? →
+merge on Gitea → `scripts/tag-release.sh` → Release → download sysupgrade
+image, verify SHA256 → `sysupgrade` on the router (settings kept).
+Wall-clock cost: a full CI build is ~2 h; a private repo's 2000 free monthly
+Actions minutes fit a few builds comfortably.
 
 ### Forking this repo for your own device
 
@@ -152,6 +164,8 @@ other difference is a supply-chain red flag.
 | [config/wr941nd-v4-25.12-16m.seed.config](config/wr941nd-v4-25.12-16m.seed.config) | current seed (LuCI, HTTPS, ed25519, deterministic banner) |
 | [config/ath79-24.10/](config/ath79-24.10/) | custom 16M DTS + device definition (injected at build time) |
 | [ci/wr941nd-v4-16m.env](ci/wr941nd-v4-16m.env) | device pin: OpenWrt tag + seed (single source of truth) |
+| [renovate.json](renovate.json) | Renovate: OpenWrt tag bumps, action SHA pins, base-image digests |
+| [scripts/tag-release.sh](scripts/tag-release.sh) | tag the merged bump on Gitea → GitHub builds the Release |
 | [Containerfile.modern](Containerfile.modern) | Debian bookworm build container (24.10/25.12) |
 | [docs/hardware-mod.md](docs/hardware-mod.md) | the flash + RAM upgrade guide |
 | `firmware/` | not in git: backups, dumps and built images |
