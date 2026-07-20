@@ -30,6 +30,13 @@
       "matchDatasources": ["docker"],
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true
+    },
+    {
+      "description": "The legacy 18.06 build container is permanently pinned to bullseye: it needs python2 / python-is-python2, and bullseye is the last Debian that ships them (trixie also dropped libncurses5-dev). Only digest updates within bullseye make sense here.",
+      "matchFileNames": ["Containerfile"],
+      "matchDatasources": ["docker"],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
     }
   ]
 }
