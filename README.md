@@ -13,7 +13,7 @@ What lives here:
   flashable **Releases** (new OpenWrt releases are picked up by Renovate on the
   upstream Gitea, not by a workflow here — see [CI](#ci--automated-builds-and-releases));
 - a **reproducibility cross-check** proving the local and CI images are
-  byte-identical (modulo a documented 6-byte timestamp residue).
+  byte-identical.
 
 > ⚠️ **Hardware requirement.** The images need **BOTH** mods: 16 MB flash
 > (W25Q128-class) **and** the 32→64 MB RAM upgrade. Stock 4 MB flash cannot
@@ -68,10 +68,10 @@ pinned tag, container image, build):
 ```bash
 git clone https://github.com/MrNoname3/openwrt-builds.git
 cd openwrt-builds
-JOBS=4 ./scripts/build.sh          # JOBS=4 is the safe setting on a 15 GB host
+JOBS=4 ./scripts/build.sh          # lower JOBS if the build runs out of memory
 ```
 
-Knobs (all optional, no TTY needed — automation/AI friendly):
+Knobs (all optional, no TTY needed):
 
 | Variable | Meaning |
 |----------|---------|
@@ -84,13 +84,20 @@ Knobs (all optional, no TTY needed — automation/AI friendly):
 Requirements: rootless **podman** (the scripts auto-detect a VS Code Flatpak
 terminal and go through `flatpak-spawn --host`), ~20 GB disk for the build
 tree, a full clean build takes ~2–4 h at `JOBS=4`. The tree deliberately lives
-**outside** the repo clone (`~/.local/share/openwrt-wr941nd/`) so a cloud-drive
-synced clone never tries to sync 300k build files.
+**outside** the repo clone (`~/.local/share/openwrt-wr941nd/`), so 300k
+intermediate build files never land in the clone.
 
 Output → `firmware/built/16m-<version>/`: factory + sysupgrade + SHA256SUMS,
 plus the FULLFLASH full-chip image when a router backup exists locally (the
 u-boot/art dumps are device-unique and not in git — see the
 [hardware guide](docs/hardware-mod.md) for what each image is for).
+
+> ⚠️ **When editing a seed:** adding or removing `kmod-*` packages changes the
+> kernel VERMAGIC, and in an already-built tree `package/install` then fails
+> with *"Cannot satisfy … kernel (= hash)"*. Rebuild the kernel in that case
+> (the legacy flow has `CLEAN=kernel` / `CLEAN=all`; for the 16M flow, delete
+> the build tree or run `make clean` in it). Seed changes that only touch
+> userspace packages are safe.
 
 ## CI — automated builds and releases
 
@@ -127,7 +134,7 @@ Everything up to the merge happens on its own; the parts that need you are
 
 1. **A bump PR appears on Gitea** (Renovate, daily) changing `OPENWRT_TAG` in
    `ci/*.env`. Its `renovate/**` branch reaches GitHub through the mirror and
-   starts a **canary build** (~2 h) — this only proves the new version still
+   starts a **canary build** — this only proves the new version still
    compiles with our DTS/seed; it publishes nothing.
 2. **Canary green → merge the PR on Gitea.** ← *step 1 of yours*
 3. **Tag it:** ← *step 2 of yours*
@@ -136,13 +143,13 @@ Everything up to the merge happens on its own; the parts that need you are
    ```
    It reads the merged pin, tags that commit `<OPENWRT_TAG>-<DEVICE_NAME>` and
    pushes to Gitea; the mirror forwards the tag, and GitHub's tag build
-   publishes the **Release** (~2 h). A tag build aborts immediately if the tag
-   and the pin disagree.
+   publishes the **Release**. A tag build aborts immediately if the tag and the
+   pin disagree.
 4. **Flash** — download the `-sysupgrade.bin` from the Release, check it
    against `SHA256SUMS`, then upgrade from LuCI or over SSH with settings
    kept. Optionally cross-check the release against your own build first:
    ```bash
-   JOBS=4 ./scripts/build.sh                      # ~2-4 h, same pin as CI
+   JOBS=4 ./scripts/build.sh                      # same pin as CI
    scripts/repro-compare.sh release-sysupgrade.bin firmware/built/16m-<ver>/*sysupgrade.bin
    ```
 
@@ -150,10 +157,6 @@ A **series jump** (e.g. v26.x) or a build-container major bump never gets an
 automatic PR: it waits on Renovate's dependency dashboard until you approve
 it, because it needs a DTS/seed review first. Treat the first flash of a new
 series as a risk moment — keep the FULLFLASH image and the CH341A at hand.
-
-Wall-clock cost: a full CI build is ~2 h, comfortably inside the 6 h job limit.
-On a public repo standard runners are free; a private fork spends ~120 of its
-2000 free monthly Actions minutes per build.
 
 ### Forking this repo for your own device
 
@@ -190,10 +193,10 @@ One-time setup after forking:
 
 Verified on v25.12.4 and v25.12.5: a clean local build and the CI build are
 **byte-identical** — kernel and every rootfs file — except a known-benign
-residue of build timestamps (in 25.12.4: 6 bytes in `usr/bin/apk` +
-`libnftables.so`, both ignoring `SOURCE_DATE_EPOCH`; by 25.12.5 upstream fixed
-those, leaving only the apk-db checksum cascade). Two determinism fixes make
-this possible:
+residue of build timestamps embedded by packages that ignore
+`SOURCE_DATE_EPOCH` (the exact whitelist, and how it was established, is
+documented in [scripts/_inner-repro-compare.sh](scripts/_inner-repro-compare.sh)).
+Two determinism fixes make this possible:
 
 - `CONFIG_KERNEL_BUILD_USER/DOMAIN` pinned in the seed (otherwise the kernel
   banner embeds the random container hostname);
@@ -226,9 +229,7 @@ other difference is a supply-chain red flag.
 | [Containerfile.modern](Containerfile.modern) | Debian bookworm build container (24.10/25.12) |
 | [docs/hardware-mod.md](docs/hardware-mod.md) | the flash + RAM upgrade guide |
 | `firmware/` | not in git: backups, dumps and built images |
-| [scripts/shell.sh](scripts/shell.sh), [scripts/clean.sh](scripts/clean.sh) | **legacy flow only** — interactive shell / cleanup for the 18.06 container + `src/` tree; they do **not** touch the current build tree (`~/.local/share/openwrt-wr941nd/openwrt-<series>`), remove that by hand |
-| [.gitea/](.gitea/) | Gitea merge-message templates (upstream source of truth; irrelevant to a GitHub-only fork) |
-| [Containerfile](Containerfile), [scripts/fw-build.sh](scripts/fw-build.sh), `config/*18.06*` | legacy 18.06/ar71xx flow (see below) |
+| [Containerfile](Containerfile), `scripts/{fw,img}-build.sh`, `scripts/shell.sh`, `scripts/clean.sh`, `config/*18.06*` | legacy 18.06/ar71xx flow → [docs/legacy-18.06.md](docs/legacy-18.06.md). These do **not** touch the current 16M build tree |
 
 ## Operations / troubleshooting (deployed AP)
 
@@ -261,24 +262,11 @@ Pre-mod, 24.10 + LuCI + 802.11r left ~7 MB free — no OOM but no headroom, and
 25.12 didn't fit at all (constant OOM reboots). This is what motivated the
 64 MB upgrade; post-mod there is ~19 MB free + ~17 MB cache.
 
-## Legacy: the original 18.06 phases
+## Legacy: the original 18.06 flow
 
-The project started (2026-06) with different goals, kept here for context:
-**(1)** reproduce the then-running stock `18.06.9` firmware from source —
-done, `scripts/fw-build.sh` + the `18.06` seeds, `ar71xx` target, Debian
-bullseye [Containerfile](Containerfile); **(2)** strip it to an AP-only
-package set — done as the "pragmatic AP" seed; **(3)** the 16 MB / 64 MB mod
-and a current OpenWrt — done, and that flow (above) replaced the rest.
-
-Usage of the legacy flow: `./scripts/img-build.sh` once, then
-`./scripts/fw-build.sh` (`OPENWRT_TAG=`, `SEED_FILE=`, `BUILD_LABEL=` as
-knobs; outputs under `firmware/built/<label>/`).
-
-> ⚠️ **Kernel lesson** (applies to any seed editing): a seed change that adds/
-> removes `kmod-*` packages changes the kernel VERMAGIC; in an already-built
-> tree `package/install` then fails with *"Cannot satisfy … kernel (= hash)"*.
-> Rebuild with `CLEAN=kernel` (or `CLEAN=all`). The pragmatic-AP seed avoided
-> the problem by only removing userspace daemons (dnsmasq, odhcpd).
+The project started out reproducing and slimming the stock 4 MB firmware; that
+work is done and superseded, but still builds —
+see [docs/legacy-18.06.md](docs/legacy-18.06.md).
 
 ## License
 

@@ -11,9 +11,9 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IMAGE_NAME="openwrt-builder"
 
 # The OpenWRT working tree is ~9 GB / 300k+ files. It deliberately lives OUTSIDE
-# the project folder, because Documents/ here is a synced cloud-drive folder and
-# a cloud client would try to sync every intermediate build file. Keep only the
-# small tracked files + final binaries (firmware/) under the synced folder.
+# the project folder, so the repo clone stays small and nothing indexing or
+# syncing it has to walk every intermediate build file. Only the tracked files
+# and the final binaries (firmware/) live in the project folder.
 # Override the location with OPENWRT_SRC if you want it elsewhere.
 SRC_DIR="${OPENWRT_SRC:-$HOME/.local/share/openwrt-wr941nd/src}"
 

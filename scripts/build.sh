@@ -3,7 +3,7 @@
 #
 # The single source of truth for "what to build" is the per-device pin file
 # ci/<device>.env (OPENWRT_TAG + SEED_FILE + DEVICE_NAME) -- the same file the
-# CI reads. A fresh machine (or an AI agent) reproduces the CI build with:
+# CI reads. A fresh machine reproduces the CI build with:
 #
 #   git clone <this repo> && cd <repo> && ./scripts/build.sh
 #
@@ -11,10 +11,10 @@
 # pinned tag (blobless clone: full commit graph, so getver.sh derives the
 # correct rXXXXX revision), then delegates to build-16m.sh.
 #
-# Knobs (env vars -- no TTY needed, automation/AI friendly):
+# Knobs (env vars -- no TTY needed):
 #   DEVICE=<name>          device pin to use when several ci/*.env exist
 #   TAG=vX.Y.Z             override the pinned OpenWrt tag
-#   JOBS=N                 parallel build jobs (use 4 on the 15GB host!)
+#   JOBS=N                 parallel build jobs (lower it if the build OOMs)
 #   OPENWRT_SRC_ROOT=dir   where source trees live
 #                          (default ~/.local/share/openwrt-wr941nd)
 #   DRY_RUN=1              print the resolved plan and exit, changing nothing
