@@ -10,7 +10,9 @@
 #
 # Usage:
 #   scripts/router-backup.sh [HOST_ALIAS] [OUTBASE]
-#     HOST_ALIAS  ssh host/alias       (default: tplink-router)
+#     HOST_ALIAS  ssh host/alias or user@ip -- anything ssh(1) accepts, e.g.
+#                 root@192.168.1.1 or a ~/.ssh/config alias
+#                 (default: tplink-router)
 #     OUTBASE     output base dir      (default: <project>/firmware/router-backup)
 #   RUNS=3 scripts/router-backup.sh           # number of cross-check passes
 set -euo pipefail
@@ -53,7 +55,9 @@ echo "[*] Reading partition map and device info ..."
 
 if ! grep -q '^mtd[0-9]' "$dest/device-info.txt" 2>/dev/null; then
     echo "[!] Could not read /proc/mtd over SSH. ssh stderr:"; cat "$dest/ssh-err.txt" 2>/dev/null
-    echo "    Hint: does 'ssh-legacy $HOST uptime' work?"; exit 1
+    echo "    Hint: does plain 'ssh $HOST uptime' work? On very old Dropbear you"
+    echo "    may also need the ssh-rsa/SHA-1 options this script already sets."
+    exit 1
 fi
 rm -f "$dest/ssh-err.txt"
 

@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
-# Phase 3: build a custom 16MB OpenWRT 24.10 image for the TL-WR941ND v4, then
-# assemble the FULL 16MB flash image (u-boot + firmware + art) ready to write to
-# the new chip with flashrom. Uses the modern (bookworm) build container.
+# Build the custom 16MB OpenWrt image for the TL-WR941ND v4, then assemble the
+# FULL 16MB flash image (u-boot + firmware + art) ready to write to the new chip
+# with flashrom. Uses the modern (bookworm) build container.
+#
+# Normally invoked by scripts/build.sh, which resolves the OpenWrt version from
+# the pin file (ci/*.env) and passes it in via OPENWRT_SRC_24 + BUILD_TAG. The
+# "24"/"24.10" names below are historical -- this flow started on 24.10; the
+# current pin is 25.12.x and any series works.
 #
 # Prereqs:
-#   - OpenWRT 24.10 source at $SRC24 (cloned separately).
+#   - an OpenWrt source tree at $SRC24, checked out at the pinned tag
+#     (build.sh clones it and checks out the tag for you).
 #   - A router backup under firmware/router-backup/<ts>/ (mtd0_u-boot.bin,
 #     mtd4_art.bin) -- provides the device-unique u-boot + WiFi calibration.
 #
-# Usage:  scripts/build-16m.sh
+# Usage:  scripts/build.sh          (preferred -- pin-driven)
+#         scripts/build-16m.sh      (direct; set OPENWRT_SRC_24 + SEED_FILE)
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 

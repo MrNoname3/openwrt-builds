@@ -9,8 +9,9 @@ What lives here:
 
 - a **containerized buildroot** (rootless podman, nothing installed on the host)
   that injects a custom 16 MB DTS/device profile into a stock OpenWrt tree;
-- **GitHub Actions CI** that builds the exact same image, watches OpenWrt for
-  new releases (auto-PR), and publishes flashable **Releases**;
+- **GitHub Actions CI** that builds the exact same image and publishes
+  flashable **Releases** (new OpenWrt releases are picked up by Renovate on the
+  upstream Gitea, not by a workflow here — see [CI](#ci--automated-builds-and-releases));
 - a **reproducibility cross-check** proving the local and CI images are
   byte-identical (modulo a documented 6-byte timestamp residue).
 
@@ -20,6 +21,14 @@ What lives here:
 > (verified on this unit). **Never flash a stock device**, and never use
 > official OpenWrt images on a modded one (the official
 > `tplink,tl-wr941-v4` profile targets the 4 MB layout → brick).
+>
+> ⚠️ **No safety net — read this before you flash anything.** The modded board
+> still reports the stock compat string, so the 16M image *must* claim
+> `tplink,tl-wr941-v4` in `SUPPORTED_DEVICES` to be installable at all. The
+> consequence: **`sysupgrade` will happily accept these images on a stock 4 MB
+> device without `--force`** (the list also covers `tl-wr741nd`). The usual
+> "wrong device" guard does not protect you here. Only ever flash a board you
+> personally modded, and keep the FULLFLASH image + a programmer for recovery.
 
 ## From a stock unit to where this repo is — the complete path
 
@@ -33,14 +42,17 @@ If you own this router and want to end up here, this is the whole journey:
 2. **Back up the original flash** — twice if you can (SSH + chip read). The
    `u-boot` (contains your MAC) and `art` (your radio calibration) regions are
    irreplaceable. → [docs/hardware-mod.md](docs/hardware-mod.md), step 1.
-3. **Do the hardware mod** (RAM swap + optionally recap; the flash chip gets
-   written in step 5 and soldered then).
-   → [docs/hardware-mod.md](docs/hardware-mod.md), step 5.
+3. **Swap the RAM** (and optionally recap while the board is open). The flash
+   chip is *not* soldered yet — it gets written first, in step 5.
+   → [docs/hardware-mod.md](docs/hardware-mod.md), step 5 (RAM swap).
 4. **Build the firmware**: `JOBS=4 ./scripts/build.sh` (below). With your
    backup in place it also assembles the **full-chip image** (your u-boot +
    new firmware + your art, at the right offsets).
-5. **Write the new chip, first boot, configure.**
-   → [docs/hardware-mod.md](docs/hardware-mod.md), steps 4 and 6.
+   → [docs/hardware-mod.md](docs/hardware-mod.md), steps 2–3.
+5. **Write the new chip with the programmer, solder it in, first boot,
+   configure.**
+   → [docs/hardware-mod.md](docs/hardware-mod.md), step 4 (write + solder) and
+   step 6 (first boot).
 6. **Updates from then on are software-only**: fork this repo for your own CI
    (see [Forking](#forking-this-repo-for-your-own-device)) or just build
    locally; new OpenWrt patch release → PR → Release → `sysupgrade` with
@@ -139,8 +151,9 @@ automatic PR: it waits on Renovate's dependency dashboard until you approve
 it, because it needs a DTS/seed review first. Treat the first flash of a new
 series as a risk moment — keep the FULLFLASH image and the CH341A at hand.
 
-Wall-clock cost: a full CI build is ~2 h; a private repo's 2000 free monthly
-Actions minutes fit a few builds comfortably.
+Wall-clock cost: a full CI build is ~2 h, comfortably inside the 6 h job limit.
+On a public repo standard runners are free; a private fork spends ~120 of its
+2000 free monthly Actions minutes per build.
 
 ### Forking this repo for your own device
 
@@ -160,6 +173,11 @@ One-time setup after forking:
 3. Replace the backup-dependent bits with your own device's dumps (keep them
    out of git!) and, for a different router model, your own DTS + seed +
    `ci/*.env`.
+4. `scripts/tag-release.sh` assumes it runs on a **`master`** branch and pushes
+   the tag to **`origin`**. In a GitHub-only fork that is simply your fork, and
+   it works unchanged — the "tags must originate on Gitea" rule above is a
+   consequence of *this* repo's push mirror, not of the tooling. Rename the
+   branch check if your default branch is `main`.
 
 > **Note on the build container.** `Containerfile` (the legacy 18.06 flow) is
 > permanently pinned to Debian **bullseye** — it needs `python2`, and bullseye
@@ -201,14 +219,15 @@ other difference is a supply-chain red flag.
 | [scripts/repro-compare.sh](scripts/repro-compare.sh) | reproducibility check of two same-tag images |
 | [scripts/router-backup.sh](scripts/router-backup.sh) | mtd partition backup over SSH, 3× verified |
 | [config/wr941nd-v4-25.12-16m.seed.config](config/wr941nd-v4-25.12-16m.seed.config) | current seed (LuCI, HTTPS, ed25519, deterministic banner) |
-| [config/ath79-24.10/](config/ath79-24.10/) | custom 16M DTS + device definition (injected at build time) |
+| [config/ath79-16m/](config/ath79-16m/) | custom 16M DTS + device definition (injected at build time) |
 | [ci/wr941nd-v4-16m.env](ci/wr941nd-v4-16m.env) | device pin: OpenWrt tag + seed (single source of truth) |
 | [renovate.json](renovate.json) | Renovate: OpenWrt tag bumps, action SHA pins, base-image digests |
 | [scripts/tag-release.sh](scripts/tag-release.sh) | tag the merged bump on Gitea → GitHub builds the Release |
 | [Containerfile.modern](Containerfile.modern) | Debian bookworm build container (24.10/25.12) |
 | [docs/hardware-mod.md](docs/hardware-mod.md) | the flash + RAM upgrade guide |
 | `firmware/` | not in git: backups, dumps and built images |
-| [scripts/shell.sh](scripts/shell.sh), [scripts/clean.sh](scripts/clean.sh) | interactive container shell (menuconfig); build-tree cleanup |
+| [scripts/shell.sh](scripts/shell.sh), [scripts/clean.sh](scripts/clean.sh) | **legacy flow only** — interactive shell / cleanup for the 18.06 container + `src/` tree; they do **not** touch the current build tree (`~/.local/share/openwrt-wr941nd/openwrt-<series>`), remove that by hand |
+| [.gitea/](.gitea/) | Gitea merge-message templates (upstream source of truth; irrelevant to a GitHub-only fork) |
 | [Containerfile](Containerfile), [scripts/fw-build.sh](scripts/fw-build.sh), `config/*18.06*` | legacy 18.06/ar71xx flow (see below) |
 
 ## Operations / troubleshooting (deployed AP)

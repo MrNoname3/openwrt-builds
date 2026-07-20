@@ -18,6 +18,13 @@ define Device/tplink_tl-wr941-v4-16m
   TPLINK_FLASHLAYOUT := 16M
   IMAGE_SIZE := 16192k
   DEVICE_PACKAGES := kmod-ath9k wpad-basic-mbedtls
+  # DANGER: this list is deliberately WIDE. sysupgrade uses SUPPORTED_DEVICES for
+  # its compatibility check, and the modded board still reports the stock
+  # compat string -- so the 16M image must claim tplink,tl-wr941-v4 to be
+  # installable here at all. The side effect: a STOCK 4MB device (or even a
+  # tl-wr741nd) running official OpenWrt will accept this sysupgrade image
+  # WITHOUT --force and brick itself. The image is only ever safe on a board
+  # with both mods; nothing in the tooling will stop a wrong flash.
   SUPPORTED_DEVICES += tplink,tl-wr941-v4 tl-wr941nd-v4 tl-wr741nd
 endef
 TARGET_DEVICES += tplink_tl-wr941-v4-16m

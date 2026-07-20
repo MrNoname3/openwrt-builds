@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
-# Runs INSIDE the modern container, with the OpenWRT 24.10 tree mounted at /work.
+# Runs INSIDE the modern container, with the OpenWrt tree mounted at /work.
 # Injects the custom 16MB DTS + device definition, applies the seed config, and
 # builds the firmware for the custom tplink_tl-wr941-v4-16m device.
 #
-# Mounts (provided by build-16m.sh):
-#   /work        -> openwrt-24.10 source tree (read-write, persistent)
+# Mounts (provided by build-16m.sh, or by the CI workflow):
+#   /work        -> OpenWrt source tree at the pinned tag (read-write, persistent)
 #   /opt/config  -> project config/ (read-only)
 #   /opt/scripts -> project scripts/ (read-only)
 set -euo pipefail
 
-# Seed is overridable via SEED_FILE (e.g. wr941nd-v4-25.12-16m.seed.config for the
-# 25.12/64MB build); defaults to the 24.10 seed.
+# SEED_FILE comes from the pin file (ci/*.env) via build-16m.sh or the CI
+# workflow -- currently wr941nd-v4-25.12-16m.seed.config. The 24.10 fallback
+# below only applies when this script is run by hand without SEED_FILE set.
 SEED="/opt/config/${SEED_FILE:-wr941nd-v4-24.10-16m.seed.config}"
-DTS_SRC="/opt/config/ath79-24.10/ar7240_tplink_tl-wr941-v4-16m.dts"
-DEV_SRC="/opt/config/ath79-24.10/tplink_tl-wr941-v4-16m.device.mk"
+DTS_SRC="/opt/config/ath79-16m/ar7240_tplink_tl-wr941-v4-16m.dts"
+DEV_SRC="/opt/config/ath79-16m/tplink_tl-wr941-v4-16m.device.mk"
 PROFILE_SYM="CONFIG_TARGET_ath79_tiny_DEVICE_tplink_tl-wr941-v4-16m=y"
 JOBS="${JOBS:-$(nproc)}"
 

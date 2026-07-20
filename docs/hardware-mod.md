@@ -144,3 +144,9 @@ FULLFLASH path exists only for the initial swap and for disaster recovery.
 > ⚠️ The board still reports `tplink,tl-wr941-v4`, so **never** use official
 > OpenWrt images or attended sysupgrade — their profile targets the stock 4 MB
 > layout and would brick the device.
+>
+> ⚠️ The same compat string forces this repo's device definition to claim
+> `tplink,tl-wr941-v4` in `SUPPORTED_DEVICES`, which means the check runs in
+> **both** directions: these images also install on a *stock* 4 MB device (or a
+> `tl-wr741nd`) without `--force`, and brick it. Never hand a build from here to
+> someone with an unmodded router.

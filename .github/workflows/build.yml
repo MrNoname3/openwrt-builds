@@ -164,7 +164,15 @@ jobs:
             **Requires BOTH hardware mods: 16MB flash (W25Q128-class) AND the
             32→64MB RAM upgrade.** Never flash a stock device: the stock 4MB
             flash cannot hold this image, and on the stock 32MB RAM OpenWrt
-            25.12 constantly OOM-reboots. Upgrade from a running 16M build:
+            25.12 constantly OOM-reboots.
+
+            ⚠️ **`sysupgrade` will NOT stop you.** The modded board reports the
+            stock compat string, so this image claims `tplink,tl-wr941-v4` (and
+            `tl-wr941nd-v4`, `tl-wr741nd`) in `SUPPORTED_DEVICES` — a stock 4MB
+            device accepts it without `--force` and bricks. The wrong-device
+            guard does not apply here; verify your hardware yourself.
+
+            Upgrade from a running 16M build:
             `sysupgrade` with settings kept, using the `-sysupgrade.bin` image.
             Verify `SHA256SUMS` first; optionally cross-check against a local
             podman build of the same tag.
