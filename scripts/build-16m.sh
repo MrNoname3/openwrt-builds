@@ -48,8 +48,31 @@ podman_run run --rm \
     bash /opt/scripts/_inner-build-16m.sh
 
 # 3. Locate the built firmware images -----------------------------------------
-factory="$(ls "$SRC24/$OUT_SUB"/*tl-wr941-v4-16m*factory.bin 2>/dev/null | head -1 || true)"
-sysupgrade="$(ls "$SRC24/$OUT_SUB"/*tl-wr941-v4-16m*sysupgrade.bin 2>/dev/null | head -1 || true)"
+# The build tree is persistent and `make` does not remove images from earlier
+# builds, so a glob can match several files -- e.g. after the switch to
+# version-numbered filenames, when the old openwrt-ath79-tiny-*.bin is still
+# lying around. Picking one of those silently would be the worst outcome here:
+# a stale image can end up inside the FULLFLASH that gets written to the chip.
+# So: refuse to guess, and say exactly what to delete.
+PICKED=""
+pick_one() { # pick_one <description> <matches...>
+    local what="$1"; shift
+    PICKED=""
+    [ $# -eq 0 ] && return 0
+    if [ $# -gt 1 ]; then
+        echo "[!] Several $what images in the build tree -- refusing to guess:" >&2
+        printf '      %s\n' "$@" >&2
+        echo "    Delete the stale ones from $SRC24/$OUT_SUB and re-run." >&2
+        exit 1
+    fi
+    PICKED="$1"
+}
+
+shopt -s nullglob
+pick_one factory    "$SRC24/$OUT_SUB"/*tl-wr941-v4-16m*factory.bin;    factory="$PICKED"
+pick_one sysupgrade "$SRC24/$OUT_SUB"/*tl-wr941-v4-16m*sysupgrade.bin; sysupgrade="$PICKED"
+shopt -u nullglob
+
 [ -z "$factory" ] && [ -z "$sysupgrade" ] && { echo "[!] No tl-wr941-v4-16m factory/sysupgrade image found." >&2; exit 1; }
 dest="$PROJECT_DIR/firmware/built/$BUILD_TAG"
 mkdir -p "$dest"
