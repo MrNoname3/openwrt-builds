@@ -108,9 +108,37 @@ what makes the reproducibility cross-check meaningful). The CI runs the
   releases. (Tags must originate on Gitea — the push mirror prunes refs that
   exist only on GitHub.)
 
-**Update flow:** Renovate bump PR on Gitea → canary build on GitHub green? →
-merge on Gitea → `scripts/tag-release.sh` → Release → download sysupgrade
-image, verify SHA256 → `sysupgrade` on the router (settings kept).
+### Releasing a new OpenWrt version — the whole recipe
+
+Everything up to the merge happens on its own; the parts that need you are
+**two steps**, and the router is never touched automatically.
+
+1. **A bump PR appears on Gitea** (Renovate, daily) changing `OPENWRT_TAG` in
+   `ci/*.env`. Its `renovate/**` branch reaches GitHub through the mirror and
+   starts a **canary build** (~2 h) — this only proves the new version still
+   compiles with our DTS/seed; it publishes nothing.
+2. **Canary green → merge the PR on Gitea.** ← *step 1 of yours*
+3. **Tag it:** ← *step 2 of yours*
+   ```bash
+   ./scripts/tag-release.sh      # syncs with origin itself, no git pull needed
+   ```
+   It reads the merged pin, tags that commit `<OPENWRT_TAG>-<DEVICE_NAME>` and
+   pushes to Gitea; the mirror forwards the tag, and GitHub's tag build
+   publishes the **Release** (~2 h). A tag build aborts immediately if the tag
+   and the pin disagree.
+4. **Flash** — download the `-sysupgrade.bin` from the Release, check it
+   against `SHA256SUMS`, then upgrade from LuCI or over SSH with settings
+   kept. Optionally cross-check the release against your own build first:
+   ```bash
+   JOBS=4 ./scripts/build.sh                      # ~2-4 h, same pin as CI
+   scripts/repro-compare.sh release-sysupgrade.bin firmware/built/16m-<ver>/*sysupgrade.bin
+   ```
+
+A **series jump** (e.g. v26.x) or a build-container major bump never gets an
+automatic PR: it waits on Renovate's dependency dashboard until you approve
+it, because it needs a DTS/seed review first. Treat the first flash of a new
+series as a risk moment — keep the FULLFLASH image and the CH341A at hand.
+
 Wall-clock cost: a full CI build is ~2 h; a private repo's 2000 free monthly
 Actions minutes fit a few builds comfortably.
 
