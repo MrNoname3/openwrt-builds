@@ -118,8 +118,12 @@ Actions minutes fit a few builds comfortably.
 
 One-time setup after forking:
 
-1. Settings → Actions → General → enable **"Allow GitHub Actions to create
-   and approve pull requests"** (the watcher's bump PR needs it).
+1. Decide where the bump PRs come from. This repo drives them from a
+   self-hosted **Renovate on Gitea** (see `renovate.json`) and mirrors to
+   GitHub. A GitHub-only fork works too: run Renovate (or the hosted
+   Mend app) against the fork, or bump `ci/*.env` by hand — the build only
+   needs a `renovate/**` branch push (canary) or a `v*` tag push (release),
+   whatever creates them.
 2. Run one local build — it generates the apk signing keypair
    (`private-key.pem` / `public-key.pem`) in the build-tree root — then add
    their contents as the **`APK_PRIVATE_KEY`** and **`APK_PUBLIC_KEY`** Actions
@@ -128,6 +132,13 @@ One-time setup after forking:
 3. Replace the backup-dependent bits with your own device's dumps (keep them
    out of git!) and, for a different router model, your own DTS + seed +
    `ci/*.env`.
+
+> **Note on the build container.** `Containerfile` (the legacy 18.06 flow) is
+> permanently pinned to Debian **bullseye** — it needs `python2`, and bullseye
+> is the last release that ships it. `Containerfile.modern` stays on
+> **bookworm** deliberately: a base image swap changes the toolchain and
+> invalidates the reproducibility baseline, so it is an approval-only decision
+> rather than an automatic bump.
 
 ### Reproducibility (supply-chain cross-check)
 
