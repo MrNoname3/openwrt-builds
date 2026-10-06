@@ -1,13 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later OR MIT
 //
-// TL-WR941ND v4 with the flash upgraded to 16 MB (XT25F128B / "W25Q128").
-// Same board as the stock v4 (AR7240, ath79) -- we only override the flash
-// partition table so Linux uses the full 16 MB:
-//   u-boot   @0x000000  0x020000   (unchanged; holds the MAC)
-//   firmware @0x020000  0xFD0000   (kernel+rootfs, ~15.8 MB)
-//   art      @0xFF0000  0x010000   (device-unique WiFi calibration, at flash end)
-// Keeping compatible = "tplink,tl-wr941-v4" so board.d sets up the switch/LAN/WAN
-// exactly like the stock v4; only the partition geometry differs.
+// TL-WR941ND v4 with a 16 MB flash chip: the stock board, with a partition
+// table that spans the whole chip and keeps art in its last 64 KiB. The stock
+// compatible stays, so board.d sets up the switch, LAN and WAN as on the v4.
 
 #include "ar7240_tplink_tl-wr.dtsi"
 
@@ -16,11 +11,8 @@
     compatible = "tplink,tl-wr941-v4", "qca,ar7240";
 };
 
-// 25.12 binds the ath9k (AR9280) WiFi via its PCI id and pulls the radio
-// calibration from the "art" partition through the nvmem cell defined below.
-// 24.10 loaded calibration from the "art" mtd partition by name, so this is a
-// harmless no-op there but is REQUIRED for 25.12 (otherwise the DTB build fails
-// with "Reference to non-existent node or label calibration_art_1000").
+// The AR9280 binds by PCI id and reads its calibration through the nvmem cell
+// in the art partition below.
 &ath9k {
     compatible = "pci168c,002a";
 };
@@ -42,11 +34,8 @@
                 label = "art";
                 read-only;
 
-                // Re-create the calibration nvmem cell that lived in the
-                // stock art@3f0000 we deleted above. Offset 0x1000 is relative
-                // to the art partition start, and the art contents are copied
-                // byte-for-byte to flash 0xFF0000, so the WiFi calibration is
-                // still at +0x1000. Referenced by &ath9k in 25.12.
+                // Same offset inside art as on the stock layout: the art
+                // contents move to the new address unchanged.
                 nvmem-layout {
                     compatible = "fixed-layout";
                     #address-cells = <1>;
