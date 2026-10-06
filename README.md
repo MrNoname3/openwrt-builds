@@ -226,6 +226,7 @@ other difference is a supply-chain red flag.
 | [Containerfile](Containerfile) | Debian bookworm build container (24.10/25.12) |
 | [docs/hardware-mod.md](docs/hardware-mod.md) | the flash + RAM upgrade guide |
 | [docs/operations.md](docs/operations.md) | running the AP: setup, updates, harmless messages, pitfalls |
+| [SECURITY.md](SECURITY.md) | how releases can be verified, and how to report a vulnerability |
 | [AGENTS.md](AGENTS.md) | notes for coding agents: ground rules, forge topology, gotchas |
 | `firmware/` | not in git: backups, dumps and built images |
 
