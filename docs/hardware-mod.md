@@ -144,7 +144,8 @@ df -h /overlay  # ~10 MB overlay
 iwinfo          # radio up (art OK)
 ```
 
-Then configure, or restore a config backup.
+Then [configure](operations.md#dumb-ap-configuration), or restore a config
+backup.
 
 ## Updating later
 

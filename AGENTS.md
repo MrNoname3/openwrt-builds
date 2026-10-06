@@ -43,10 +43,8 @@ What the project is and how to build and release it is in the
 | `firmware/built/16m-<version>/` | no | build output; the FULLFLASH image only when a backup is present |
 | podman image `openwrt-builder` | no | build container from `Containerfile`, rebuilt automatically when that file changes |
 
-On a fresh machine `firmware/` is empty and there is no build tree: the build
-still works, it just skips the FULLFLASH assembly. Copy the project keypair into
-the tree root before the first build when bit-identity with CI matters (why:
-the README's "Reproducibility").
+Copy the project keypair into the tree root before the first build when
+bit-identity with CI matters (why: the README's "Reproducibility").
 
 ## Working files go in work/
 
@@ -100,7 +98,7 @@ to judgement:
 ## Verifying images
 
 - How `scripts/repro-compare.sh` decides is in the README's "Reproducibility"
-  section. Put a downloaded Release image in `work/` before comparing it.
+  section.
 - Compare package manifests as sets: `sort` collates differently between
   environments.
 - Rebuilding the same tag never brings newer packages: a release's

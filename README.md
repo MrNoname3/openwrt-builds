@@ -33,8 +33,8 @@ If you own this router and want to end up here, this is the whole journey:
 1. **Gather parts & tools**: a 16 MB SOIC-8 SPI NOR chip (W25Q128 family), a
    64 MB ×16 DDR1 chip (same type AR7240 boards ship with in their 64 MB
    variants), soldering iron/hot air, a SPI programmer (e.g. CH341A), a 3.3 V
-   USB-UART for serial. Soldering SOIC-8 is
-   easy; the DDR swap is the hard part.
+   USB-UART for serial. Soldering SOIC-8 is easy; the DDR swap is the hard
+   part.
 2. **Back up the original flash** — twice if you can (SSH + chip read). The
    `u-boot` (contains your MAC) and `art` (your radio calibration) regions are
    irreplaceable. → [docs/hardware-mod.md](docs/hardware-mod.md), step 1.
@@ -114,16 +114,17 @@ reproducibility cross-check meaningful. Pieces:
 
 ### Releasing a new OpenWrt version
 
-Two steps need you; the router is never touched automatically.
+Renovate and CI do step 1; the rest is manual, and nothing touches the router
+automatically.
 
 1. **A bump PR appears on Gitea.** Its `renovate/**` branch reaches GitHub
    through the mirror and runs the canary build, which proves the new version
    still builds with this DTS and seed; it publishes nothing.
-2. **Canary green → merge the PR on Gitea.** ← *you*
-3. **Tag it** ← *you*: run `./scripts/tag-release.sh` on master; it syncs with
+2. **Canary green → merge the PR on Gitea.**
+3. **Tag it**: run `./scripts/tag-release.sh` on master; it syncs with
    origin itself. The mirror forwards the tag and GitHub publishes the
    **Release**.
-4. **Flash** — see [Updating](docs/operations.md#updating). Optionally
+4. **Flash**: see [Updating](docs/operations.md#updating). Optionally
    cross-check the Release against your own build first
    ([Reproducibility](#reproducibility-supply-chain-cross-check)). For the
    first flash of a new series, keep the FULLFLASH image and the programmer at
