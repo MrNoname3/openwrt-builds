@@ -23,7 +23,10 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    # GitHub only: the forge's runner also reads .github/workflows but has no
+    # Docker daemon for the build container; attest and release skip with it.
+    if: github.server_url == 'https://github.com'
+    runs-on: ubuntu-latest
     outputs:
       openwrt_tag: ${{ steps.pin.outputs.OPENWRT_TAG }}
       seed_file: ${{ steps.pin.outputs.SEED_FILE }}
@@ -130,7 +133,7 @@ jobs:
     # OIDC token and sign attestations in this repository's name.
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       id-token: write # sign the provenance attestation
@@ -151,7 +154,7 @@ jobs:
     # re-release.
     needs: [build, attest]
     if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: write # create the release
