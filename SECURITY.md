@@ -3,11 +3,11 @@
 ## What a release is built from
 
 Every Release is built by GitHub Actions from this repository at the release
-tag: an OpenWrt source tag pinned in `ci/*.env`, a build container on a
-digest-pinned base image, and SHA-pinned Actions; the OpenWrt tag is pinned
-to its commit as well. A Release can be checked independently against a local
-build of the same tag — see "Reproducibility" in the [README](README.md). A
-difference beyond the documented residue is worth reporting.
+tag: an OpenWrt tag pinned to its commit in `ci/*.env`, a build container on a
+digest-pinned base image, and SHA-pinned Actions. A Release can be checked
+independently against a local build of the same tag — see "Reproducibility"
+in the [README](README.md). A difference beyond the documented residue is
+worth reporting.
 
 Packages in the images are signed with the project's apk key. Its private half
 is held by the maintainer and as an Actions secret, never in this repository.
