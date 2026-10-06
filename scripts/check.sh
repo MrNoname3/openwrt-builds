@@ -10,7 +10,9 @@
 #                     extended regex per line, '#' comments allowed)
 #   2. shellcheck  -- scripts/*.sh and .githooks/*, configured by .shellcheckrc
 #   3. yamllint    -- the workflows, configured by .yamllint
-#   4. JSON syntax -- renovate.json
+#   4. actionlint  -- the workflows' Actions semantics: expressions, job
+#                     outputs, permissions, and shellcheck on run: blocks
+#   5. JSON syntax -- renovate.json
 # The secret scan needs only git. The linters run where they are installed;
 # CI installs them, and a local run without them says which ones it skipped.
 set -euo pipefail
@@ -74,6 +76,13 @@ if command -v yamllint >/dev/null; then
     yamllint .github/workflows/ || fail=1
 else
     skipped+=(yamllint)
+fi
+
+step "actionlint"
+if command -v actionlint >/dev/null; then
+    actionlint || fail=1
+else
+    skipped+=(actionlint)
 fi
 
 step "JSON syntax"

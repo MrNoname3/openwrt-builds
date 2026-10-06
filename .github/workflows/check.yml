@@ -1,9 +1,10 @@
 name: check
 
-# Runs scripts/check.sh, the same gate as a local run, on every push. It runs
-# on GitHub only: Actions is disabled for this repository on the Gitea side.
-# Without the gitignored .secret-patterns.local, the secret scan here uses the
-# generic patterns alone.
+# Runs scripts/check.sh, the same gate as a local run, on every push. Written to
+# run on both GitHub Actions and Gitea Actions (Gitea also scans
+# .github/workflows): no actions/cache, no GitHub-only guard, and sudo only when
+# the job is not already root. Without the gitignored .secret-patterns.local,
+# the secret scan here uses the generic patterns alone.
 on:
   push:
     branches: ['**']
@@ -22,9 +23,32 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install linters
+        # Portable whether the runner runs as root (Gitea/act) or as a
+        # sudo-capable user (GitHub-hosted).
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends shellcheck yamllint
+          if [ "$(id -u)" -ne 0 ]; then SUDO=sudo; else SUDO=""; fi
+          $SUDO apt-get update -qq
+          $SUDO apt-get install -y --no-install-recommends shellcheck yamllint
+
+      - name: Install actionlint
+        # A pinned release, checked against its published sha256 before use.
+        # Renovate cannot update the checksums, so bump all three together by
+        # hand from the release's checksums file.
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+        run: |
+          case "$(uname -m)" in
+            x86_64) arch=amd64 sum=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8 ;;
+            aarch64) arch=arm64 sum=325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6 ;;
+            *) echo "::error::no actionlint pinned for $(uname -m)"; exit 1 ;;
+          esac
+          f="actionlint_${ACTIONLINT_VERSION}_linux_${arch}.tar.gz"
+          curl -fsSLO "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$f"
+          echo "$sum  $f" | sha256sum -c -
+          tar xzf "$f" actionlint
+          if [ "$(id -u)" -ne 0 ]; then SUDO=sudo; else SUDO=""; fi
+          $SUDO install -m 0755 actionlint /usr/local/bin/actionlint
+          rm -f "$f" actionlint
 
       - name: Run the release gate (same script as local runs)
         run: ./scripts/check.sh

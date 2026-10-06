@@ -30,7 +30,7 @@ What the project is and how to build and release it is in the
 - **Run `./scripts/check.sh` before every push** (a push is a publication,
   through the mirror); `git config core.hooksPath .githooks` makes git run it
   as a pre-push hook. It scans the tracked files for private data and runs
-  shellcheck and yamllint where they are installed; `.github/workflows/check.yml`
+  shellcheck, yamllint and actionlint where they are installed; `.github/workflows/check.yml`
   runs the same script on GitHub. The private scan patterns live in the
   gitignored `.secret-patterns.local`; on a machine without that file only the
   generic patterns run, so ask the owner for it rather than skipping the scan.

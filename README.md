@@ -125,7 +125,8 @@ what makes the reproducibility cross-check meaningful). The CI runs the
   with a read-only token; only the separate release job can write. Plain
   `master` pushes do not build.
 - **`.github/workflows/check.yml`** — runs `scripts/check.sh` (secret scan,
-  shellcheck, yamllint) on every push.
+  shellcheck, yamllint, actionlint) on every push; written to run on Gitea
+  Actions as well.
 - **`scripts/tag-release.sh`** — run on master after merging a bump PR:
   creates the release tag on Gitea; the mirror forwards it and GitHub
   releases. (Tags must originate on Gitea — the push mirror prunes refs that
@@ -226,7 +227,7 @@ other difference is a supply-chain red flag.
 | [ci/wr941nd-v4-16m.env](ci/wr941nd-v4-16m.env) | device pin: OpenWrt tag + seed (single source of truth) |
 | [renovate.json](renovate.json) | Renovate: OpenWrt tag bumps, action SHA pins, base-image digests |
 | [scripts/tag-release.sh](scripts/tag-release.sh) | tag the merged bump on Gitea → GitHub builds the Release |
-| [scripts/check.sh](scripts/check.sh) | pre-push gate: secret scan + shellcheck + yamllint (also run by CI) |
+| [scripts/check.sh](scripts/check.sh) | pre-push gate: secret scan + shellcheck + yamllint + actionlint (also run by CI) |
 | [Containerfile](Containerfile) | Debian bookworm build container (24.10/25.12) |
 | [docs/hardware-mod.md](docs/hardware-mod.md) | the flash + RAM upgrade guide |
 | [docs/operations.md](docs/operations.md) | running the AP: setup, updates, harmless messages, pitfalls |
