@@ -1,6 +1,4 @@
-# yamllint config for this repo. Relaxed so GitHub/Gitea Actions YAML passes
-# (the `on:` key would otherwise trip the `truthy` rule) while still catching
-# real mistakes. Long lines are a warning, not an error.
+# Relaxed for Actions workflows, whose `on:` key would trip the truthy rule.
 extends: default
 
 rules:

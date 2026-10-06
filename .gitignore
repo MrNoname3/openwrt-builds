@@ -15,8 +15,6 @@ firmware/*
 *.swp
 .DS_Store
 
-# A shared drop for working files: an agent's own temp directory is not on the
-# host's filesystem, so anything the user or host-side podman has to open lands
-# here instead.
+# Scratch files (see AGENTS.md); the directory itself is kept.
 work/*
 !work/.gitkeep
