@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Reproducibility / supply-chain cross-check of two sysupgrade images of the
 # same OpenWrt tag (e.g. a local build and the Release asset). Passes only when
-# they are byte-identical apart from the residue whitelisted in
+# they are byte-identical apart from the residue accepted in
 # _inner-repro-compare.sh.
 #
 # Usage:  scripts/repro-compare.sh imageA-sysupgrade.bin imageB-sysupgrade.bin

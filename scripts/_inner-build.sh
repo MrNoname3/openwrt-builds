@@ -16,8 +16,8 @@ PROFILE_SYM="CONFIG_TARGET_ath79_tiny_DEVICE_tplink_tl-wr941-v4-16m=y"
 JOBS="${JOBS:-$(nproc)}"
 
 cd /work
-[ "$(id -u)" = "0" ] && { echo "[!] Running as root; OpenWRT won't build. Use --userns=keep-id." >&2; exit 1; }
-echo "[i] OpenWRT: $(git describe --tags --always 2>/dev/null || echo unknown)"
+[ "$(id -u)" = "0" ] && { echo "[!] Running as root; the OpenWrt buildroot refuses it. Use --userns=keep-id." >&2; exit 1; }
+echo "[i] OpenWrt: $(git describe --tags --always 2>/dev/null || echo unknown)"
 
 # 1. Feeds --------------------------------------------------------------------
 echo "[*] feeds update/install ..."
