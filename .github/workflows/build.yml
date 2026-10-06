@@ -40,7 +40,6 @@ jobs:
           cat pin.env >> "$GITHUB_OUTPUT"
 
       - name: Verify a release tag matches the pinned version
-        # Fail before the build if the tag is not this commit's pinned release.
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           expected="${OPENWRT_TAG}-${DEVICE_NAME}"
