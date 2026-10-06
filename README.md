@@ -226,13 +226,16 @@ other difference is a supply-chain red flag.
 | [ci/wr941nd-v4-16m.env](ci/wr941nd-v4-16m.env) | device pin: OpenWrt tag + seed (single source of truth) |
 | [renovate.json](renovate.json) | Renovate: OpenWrt tag bumps, action SHA pins, base-image digests |
 | [scripts/tag-release.sh](scripts/tag-release.sh) | tag the merged bump on Gitea → GitHub builds the Release |
-| [scripts/check.sh](scripts/check.sh) | pre-push gate: secret scan + shellcheck + yamllint (also run by CI; `.githooks/pre-push` runs it once enabled with `git config core.hooksPath .githooks`) |
+| [scripts/check.sh](scripts/check.sh) | pre-push gate: secret scan + shellcheck + yamllint (also run by CI) |
 | [Containerfile](Containerfile) | Debian bookworm build container (24.10/25.12) |
 | [docs/hardware-mod.md](docs/hardware-mod.md) | the flash + RAM upgrade guide |
 | [docs/operations.md](docs/operations.md) | running the AP: setup, updates, harmless messages, pitfalls |
 | [SECURITY.md](SECURITY.md) | how releases can be verified, and how to report a vulnerability |
 | [AGENTS.md](AGENTS.md) | notes for coding agents: ground rules, forge topology, gotchas |
-| `firmware/` | not in git: backups, dumps and built images |
+| `firmware/` | flash backups and built images; the directory is in git, its contents never are |
+| `work/` | scratch files (downloads, comparison inputs, logs); contents not in git |
+| `.githooks/` | `pre-push` runs `scripts/check.sh` (enable with `git config core.hooksPath .githooks`) |
+| `.editorconfig`, `.vscode/`, [openwrt-wr941nd.code-workspace](openwrt-wr941nd.code-workspace) | editor settings: whitespace rules in `.editorconfig`, VS Code extras in the other two |
 
 ## Operations / troubleshooting (deployed AP)
 
