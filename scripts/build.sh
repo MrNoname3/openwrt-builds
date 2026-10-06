@@ -16,7 +16,8 @@
 #
 # Knobs (env vars -- no TTY needed):
 #   DEVICE=<name>          device pin to use when several ci/*.env exist
-#   TAG=vX.Y.Z             override the pinned OpenWrt tag
+#   TAG=vX.Y.Z             override the pinned OpenWrt tag (skips the
+#                          OPENWRT_COMMIT check, which belongs to the pin)
 #   JOBS=N                 parallel build jobs (lower it if the build OOMs)
 #   OPENWRT_SRC_ROOT=dir   where source trees live
 #                          (default ~/.local/share/openwrt-wr941nd)
@@ -49,12 +50,12 @@ else
 fi
 
 # --- 2. Load the pins ----------------------------------------------------------
-OPENWRT_TAG=""; SEED_FILE=""; DEVICE_NAME=""
+OPENWRT_TAG=""; OPENWRT_COMMIT=""; SEED_FILE=""; DEVICE_NAME=""
 # shellcheck source=/dev/null
 source "$ENV_FILE"
 OPENWRT_TAG="${TAG:-$OPENWRT_TAG}"
-if [ -z "$OPENWRT_TAG" ] || [ -z "$SEED_FILE" ]; then
-    echo "[!] $ENV_FILE must set OPENWRT_TAG and SEED_FILE." >&2; exit 1
+if [ -z "$OPENWRT_TAG" ] || [ -z "$OPENWRT_COMMIT" ] || [ -z "$SEED_FILE" ]; then
+    echo "[!] $ENV_FILE must set OPENWRT_TAG, OPENWRT_COMMIT and SEED_FILE." >&2; exit 1
 fi
 
 series="${OPENWRT_TAG#v}"; series="${series%.*}" # v25.12.5 -> 25.12
@@ -86,6 +87,15 @@ else
     git -C "$TREE" checkout -q "$OPENWRT_TAG"
 fi
 echo "[i] Tree now at: $(git -C "$TREE" describe --tags --always)"
+if [ -z "${TAG:-}" ]; then
+    head="$(git -C "$TREE" rev-parse HEAD)"
+    if [ "$head" != "$OPENWRT_COMMIT" ]; then
+        echo "[!] $OPENWRT_TAG resolves to $head, but the pin says $OPENWRT_COMMIT." >&2
+        echo "    The upstream tag moved, or the clone is not what it should be: stopping." >&2
+        exit 1
+    fi
+    echo "[i] Commit matches the pin: $head"
+fi
 
 # --- 4. Build in the container ------------------------------------------------
 ensure_image

@@ -5,9 +5,9 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "OPENWRT_TAG pin in the per-device ci/*.env files, tracked against OpenWrt's release tags (github.com mirror of git.openwrt.org)",
+      "description": "OPENWRT_TAG pin in the per-device ci/*.env files and the commit it resolves to (OPENWRT_COMMIT, on the next line), tracked against OpenWrt's release tags (github.com mirror of git.openwrt.org)",
       "managerFilePatterns": ["/^ci/.*\\.env$/"],
-      "matchStrings": ["OPENWRT_TAG=(?<currentValue>v[0-9][0-9.]*)"],
+      "matchStrings": ["OPENWRT_TAG=(?<currentValue>v[0-9][0-9.]*)\\nOPENWRT_COMMIT=(?<currentDigest>[0-9a-f]{40})"],
       "depNameTemplate": "openwrt/openwrt",
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "semver-coerced"

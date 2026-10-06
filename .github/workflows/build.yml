@@ -74,9 +74,15 @@ jobs:
         # Blobless clone, NOT shallow: scripts/getver.sh counts commits to derive
         # the revision (rXXXXX); with --depth 1 it falls back to r1 and taints
         # base-files' version + /etc/openwrt_release (seen on the first CI run).
+        # The checked-out commit must be the one pinned next to the tag.
         run: |
           git clone --filter=blob:none --branch "$OPENWRT_TAG" \
             https://github.com/openwrt/openwrt.git "$HOME/openwrt"
+          head="$(git -C "$HOME/openwrt" rev-parse HEAD)"
+          if [ "$head" != "$OPENWRT_COMMIT" ]; then
+            echo "::error::$OPENWRT_TAG resolves to $head, but ci/*.env pins $OPENWRT_COMMIT"
+            exit 1
+          fi
 
       - name: Install the project apk signing keypair
         # Without this every build tree generates its OWN signing key: the
