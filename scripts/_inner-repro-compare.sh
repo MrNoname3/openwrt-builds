@@ -79,7 +79,7 @@ done < "$WORK/changed.txt"
 
 echo
 if [ "$fail" = 0 ]; then
-    echo "[✓] PASS: images are reproducible (identical modulo the known timestamp residue)"
+    echo "[✓] PASS: images are reproducible (identical apart from the known apk database residue)"
 else
     echo "[✗] FAIL: differences beyond the known-benign residue -- investigate before trusting!"
     exit 1
