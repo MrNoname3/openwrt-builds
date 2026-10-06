@@ -114,8 +114,11 @@ if [ ${#factories[@]} -ne 1 ] || [ ${#sysupgrades[@]} -ne 1 ]; then
 fi
 factory="${factories[0]}"; sysupgrade="${sysupgrades[0]}"
 
+# Rebuilding a version replaces its whole output, so no stale image or checksum
+# from an earlier build of it is left next to the new ones.
 dest="$PROJECT_DIR/firmware/built/16m-${OPENWRT_TAG#v}"
 mkdir -p "$dest"
+rm -f "$dest"/*.bin "$dest"/SHA256SUMS
 for img in "$factory" "$sysupgrade"; do
     echo "[i] Firmware image: $(basename "$img") ($(stat -c%s "$img") bytes)"
     cp -f "$img" "$dest/"
