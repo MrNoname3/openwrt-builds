@@ -25,10 +25,7 @@ if [ "$BRANCH" != "master" ]; then
 fi
 
 git fetch -q origin
-HEAD_SHA=$(git rev-parse HEAD)
-ORIGIN_SHA=$(git rev-parse origin/master)
-
-if [ "$HEAD_SHA" != "$ORIGIN_SHA" ]; then
+if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/master)" ]; then
     if ! git merge-base --is-ancestor HEAD origin/master; then
         echo "local master has diverged from origin/master -- resolve manually" >&2
         exit 1
