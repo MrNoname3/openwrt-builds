@@ -27,7 +27,8 @@ What the project is and how to build and release it is in the
 - Commit subjects use an area prefix — `docs:`, `ci:`, `seed:`, `build:`,
   `scripts:`, `renovate:`, `editor:` — one concern per commit.
 - **Run `./scripts/check.sh` before every push** (a push is a publication,
-  through the mirror). It scans the tracked files for private data and runs
+  through the mirror); `git config core.hooksPath .githooks` makes git run it
+  as a pre-push hook. It scans the tracked files for private data and runs
   shellcheck and yamllint where they are installed; `.github/workflows/check.yml`
   runs the same script on GitHub. The private scan patterns live in the
   gitignored `.secret-patterns.local`; on a machine without that file only the

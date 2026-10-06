@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Release gate -- every repository check in one place. Run it before pushing:
+# Release gate -- every repository check in one place. Run it before pushing,
+# or let .githooks/pre-push run it (git config core.hooksPath .githooks):
 #
 #   ./scripts/check.sh
 #
@@ -7,7 +8,7 @@
 #   1. secret scan -- tracked files; the generic patterns below, plus private
 #                     ones from the gitignored .secret-patterns.local (one
 #                     extended regex per line, '#' comments allowed)
-#   2. shellcheck  -- scripts/*.sh, configured by .shellcheckrc
+#   2. shellcheck  -- scripts/*.sh and .githooks/*, configured by .shellcheckrc
 #   3. yamllint    -- the workflows, configured by .yamllint
 #   4. JSON syntax -- renovate.json
 # The secret scan needs only git. The linters run where they are installed;
@@ -63,7 +64,7 @@ fi
 
 step "shellcheck"
 if command -v shellcheck >/dev/null; then
-    shellcheck scripts/*.sh || fail=1
+    shellcheck scripts/*.sh .githooks/* || fail=1
 else
     skipped+=(shellcheck)
 fi
