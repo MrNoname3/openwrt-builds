@@ -9,15 +9,11 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
-MODERN_IMAGE="openwrt-builder-modern"
 [ $# -eq 2 ] || { echo "usage: $0 <A-sysupgrade.bin> <B-sysupgrade.bin>" >&2; exit 1; }
 A="$(realpath "$1")"; B="$(realpath "$2")"
 [ -f "$A" ] && [ -f "$B" ] || { echo "[!] input image not found" >&2; exit 1; }
 
-if ! podman_run image exists "$MODERN_IMAGE"; then
-    echo "[*] Building container image '$MODERN_IMAGE' ..."
-    podman_run build -t "$MODERN_IMAGE" -f "$PROJECT_DIR/Containerfile.modern" "$PROJECT_DIR"
-fi
+ensure_modern_image
 
 podman_run run --rm \
     --userns=keep-id \

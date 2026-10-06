@@ -31,3 +31,23 @@ else
 fi
 
 podman_run() { "${PODMAN[@]}" "$@"; }
+
+# Container for the 16M flow (24.10+), built from Containerfile.modern.
+MODERN_IMAGE="openwrt-builder-modern"
+
+# Build MODERN_IMAGE, or rebuild it when Containerfile.modern differs from the
+# one it was built from, whose sha256 is recorded in an image label.
+ensure_modern_image() {
+    local file="$PROJECT_DIR/Containerfile.modern" want have old
+    want="$(sha256sum "$file" | cut -d' ' -f1)"
+    have="$(podman_run image inspect --format '{{index .Labels "containerfile.sha256"}}' \
+        "$MODERN_IMAGE" 2>/dev/null || true)"
+    [ "$have" = "$want" ] && return 0
+
+    old="$(podman_run image inspect --format '{{.Id}}' "$MODERN_IMAGE" 2>/dev/null || true)"
+    echo "[*] Building container image '$MODERN_IMAGE' from Containerfile.modern ..."
+    podman_run build --label "containerfile.sha256=$want" \
+        -t "$MODERN_IMAGE" -f "$file" "$PROJECT_DIR"
+    # The previous build is left untagged; remove it unless a container uses it.
+    if [ -n "$old" ]; then podman_run rmi "$old" >/dev/null 2>&1 || true; fi
+}

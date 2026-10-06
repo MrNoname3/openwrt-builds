@@ -36,7 +36,7 @@ What the project is and how to build and release it is in the
 | `<build tree>/private-key.pem`, `public-key.pem` | no | the project's apk signing keypair; CI holds the same pair as Actions secrets |
 | `firmware/router-backup/<ts>/` | no | mtd dumps of the original flash — `u-boot` and `art` are irreplaceable |
 | `firmware/built/16m-<version>/` | no | build output; the FULLFLASH image only when a backup is present |
-| podman image `openwrt-builder-modern` | no | build container, built from `Containerfile.modern` on first use |
+| podman image `openwrt-builder-modern` | no | build container from `Containerfile.modern`, rebuilt automatically when that file changes |
 
 On a fresh machine `firmware/` is empty and there is no build tree: the build
 still works, it just skips the FULLFLASH assembly. A fresh build tree generates
@@ -44,10 +44,10 @@ its own signing keypair, so its images differ from the CI's in every package
 signature; copy the project keypair into the tree root before the first build
 when bit-identity with CI matters.
 
-`build-16m.sh` builds the container image only when it does not exist yet. After
-`Containerfile.modern` changes (Renovate digest bumps included), remove the image
-(`podman rmi openwrt-builder-modern`) so the next local build uses the same base
-as CI.
+The container image carries the sha256 of the `Containerfile.modern` it was
+built from; `build-16m.sh` and `repro-compare.sh` rebuild it when the file
+changes (Renovate digest bumps included), so local builds use the same base as
+CI.
 
 ## Environment
 

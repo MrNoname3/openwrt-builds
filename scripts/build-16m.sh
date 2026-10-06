@@ -19,7 +19,6 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
-MODERN_IMAGE="openwrt-builder-modern"
 SRC24="${OPENWRT_SRC_24:-$HOME/.local/share/openwrt-wr941nd/openwrt-24.10}"
 OUT_SUB="bin/targets/ath79/tiny"
 # Output subfolder under firmware/built/ -- override per version so a 25.12 build
@@ -29,10 +28,7 @@ BUILD_TAG="${BUILD_TAG:-16m-24.10}"
 [ -d "$SRC24/.git" ] || { echo "[!] 24.10 source not found at $SRC24" >&2; exit 1; }
 
 # 1. Modern build image --------------------------------------------------------
-if ! podman_run image exists "$MODERN_IMAGE"; then
-    echo "[*] Building modern container image '$MODERN_IMAGE' ..."
-    podman_run build -t "$MODERN_IMAGE" -f "$PROJECT_DIR/Containerfile.modern" "$PROJECT_DIR"
-fi
+ensure_modern_image
 
 # 2. Firmware build inside the container ---------------------------------------
 echo "[*] Building firmware in container ..."
