@@ -35,9 +35,7 @@ jobs:
       - name: Load device build settings
         id: pin
         run: |
-          grep -v '^#' ci/wr941nd-v4-16m.env | grep . > pin.env
-          cat pin.env >> "$GITHUB_ENV"
-          cat pin.env >> "$GITHUB_OUTPUT"
+          grep -v '^#' ci/wr941nd-v4-16m.env | grep . | tee -a "$GITHUB_ENV" >> "$GITHUB_OUTPUT"
 
       - name: Verify a release tag matches the pinned version
         if: startsWith(github.ref, 'refs/tags/')
