@@ -1,0 +1,18 @@
+{
+  // Applied when opening this folder directly ("Open Folder"). Mirrors
+  // openwrt-wr941nd.code-workspace (used for "Open Workspace from File") so both
+  // entry points behave the same. Whitespace/indent rules live in .editorconfig
+  // (editor-agnostic) and are applied by the recommended EditorConfig extension;
+  // only VS-Code-specific bits that .editorconfig cannot express are set here.
+  "files.associations": {
+    // Seeds and the ci/ pin files are KEY=value.
+    "*.seed.config": "properties",
+    "*.env": "properties",
+    "Containerfile": "dockerfile"
+  },
+  // firmware/ and work/ stay visible in the explorer; their images and scratch
+  // files are kept out of search and file watching.
+  "search.exclude": { "firmware/**": true, "work/**": true },
+  "files.watcherExclude": { "**/firmware/**": true, "**/work/**": true },
+  "editor.rulers": [100]
+}

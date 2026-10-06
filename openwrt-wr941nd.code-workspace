@@ -1,45 +1,36 @@
 {
-	// Portable workspace for the TL-WR941ND OpenWrt build project.
-	// Uses only relative paths so it works from any clone location:
-	// open this file in VS Code (File > Open Workspace from File...) and
-	// everything below is set up automatically.
-	"folders": [
-		{
-			"name": "openwrt-wr941nd",
-			"path": "."
-		}
-	],
-	"settings": {
-		// firmware/ (built images, backups) stays visible but is kept out of
-		// search and the file watcher so the workspace stays snappy.
-		"files.exclude": {
-			"**/.git": true
-		},
-		"search.exclude": {
-			"firmware": true
-		},
-		"files.watcherExclude": {
-			"**/firmware/**": true
-		},
-		// Treat the project's non-standard file types sensibly.
-		"files.associations": {
-			"*.seed.config": "properties",
-			"Containerfile": "dockerfile"
-		},
-		"[shellscript]": {
-			"editor.tabSize": 4,
-			"editor.insertSpaces": false,
-			"files.eol": "\n"
-		},
-		"shellcheck.enable": true
-	},
-	"extensions": {
-		// Suggested on first open; no absolute paths, safe to share.
-		"recommendations": [
-			"timonwong.shellcheck",
-			"foxundermoon.shell-format",
-			"ms-azuretools.vscode-docker",
-			"redhat.vscode-yaml"
-		]
-	}
+  // Portable VS Code workspace. Clone the repo anywhere and open this file
+  // ("File > Open Workspace from File…") — everything below uses relative paths,
+  // so it just works, with no machine-specific settings baked in. Mirrors
+  // .vscode/settings.json and .vscode/extensions.json (used for "Open Folder");
+  // whitespace rules live in .editorconfig.
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    // Seeds and the ci/ pin files are KEY=value.
+    "files.associations": {
+      "*.seed.config": "properties",
+      "*.env": "properties",
+      "Containerfile": "dockerfile"
+    },
+    // firmware/ and work/ stay visible in the explorer; their images and
+    // scratch files are kept out of search and file watching.
+    "search.exclude": { "firmware/**": true, "work/**": true },
+    "files.watcherExclude": { "**/firmware/**": true, "**/work/**": true },
+    "editor.rulers": [100]
+  },
+  "extensions": {
+    // Offered on open so a fresh machine gets the same linting the CI enforces:
+    // EditorConfig applies .editorconfig, shellcheck lints scripts, YAML +
+    // GitHub Actions cover the workflows.
+    "recommendations": [
+      "editorconfig.editorconfig",
+      "timonwong.shellcheck",
+      "redhat.vscode-yaml",
+      "github.vscode-github-actions"
+    ]
+  }
 }
