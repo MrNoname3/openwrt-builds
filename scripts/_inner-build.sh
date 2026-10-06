@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs INSIDE the modern container, with the OpenWrt tree mounted at /work.
+# Runs INSIDE the build container, with the OpenWrt tree mounted at /work.
 # Injects the custom 16MB DTS + device definition, applies the seed config, and
 # builds the firmware for the custom tplink_tl-wr941-v4-16m device.
 #

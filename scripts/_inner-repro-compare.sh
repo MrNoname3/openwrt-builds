@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs INSIDE the modern container. Compares two sysupgrade images of the SAME
+# Runs INSIDE the build container. Compares two sysupgrade images of the SAME
 # OpenWrt tag for reproducibility, tolerating ONLY the known-benign residue:
 # build timestamps embedded by two packages that ignore SOURCE_DATE_EPOCH
 # (apk-mbedtls: gzip MTIME in the help blob inside usr/bin/apk; nftables-json:
