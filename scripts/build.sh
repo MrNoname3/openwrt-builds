@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 # Local build: the same build as the CI, driven by the same ci/<device>.env.
-#
-# Clones the OpenWrt tree at the pinned tag when it is missing (blobless, so
-# getver.sh sees the full history and derives the right revision), checks its
-# commit against the pin, builds in the container and collects the images into
-# firmware/built/16m-<version>/ -- plus the FULLFLASH image (u-boot + firmware
-# + art) when a router backup exists under firmware/router-backup/.
+# Images go to firmware/built/16m-<version>/, plus the FULLFLASH image when a
+# router backup exists under firmware/router-backup/.
 #
 # Knobs (environment variables):
 #   DEVICE=<name>          device pin to use; required when several ci/*.env exist
@@ -16,11 +12,11 @@
 #                          (default ~/.local/share/openwrt-wr941nd)
 #   DRY_RUN=1              print the resolved plan and exit, changing nothing
 set -euo pipefail
+shopt -s nullglob
 # shellcheck source=_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
 # --- 1. Select the device pin -------------------------------------------------
-shopt -s nullglob
 envs=("$PROJECT_DIR"/ci/*.env)
 [ ${#envs[@]} -gt 0 ] || { echo "[!] No device pin found under ci/." >&2; exit 1; }
 if [ -n "${DEVICE:-}" ]; then
@@ -55,6 +51,7 @@ echo "[i] Source tree: $TREE"
 
 # --- 3. Ensure the source tree sits at the pinned tag ---------------------------
 if [ ! -d "$TREE/.git" ]; then
+    # Blobless, not shallow: getver.sh counts commits to derive the image's revision.
     echo "[*] Cloning OpenWrt $OPENWRT_TAG (blobless) ..."
     mkdir -p "$SRC_ROOT"
     git clone --filter=blob:none --branch "$OPENWRT_TAG" \
@@ -100,10 +97,8 @@ podman_run run --rm \
 # The inner build clears this device's old images first, so exactly one of each
 # must exist; anything else means the build did not produce what it should.
 OUT="$TREE/bin/targets/ath79/tiny"
-shopt -s nullglob
 factories=("$OUT"/*tl-wr941-v4-16m*factory.bin)
 sysupgrades=("$OUT"/*tl-wr941-v4-16m*sysupgrade.bin)
-shopt -u nullglob
 if [ ${#factories[@]} -ne 1 ] || [ ${#sysupgrades[@]} -ne 1 ]; then
     echo "[!] Expected one factory and one sysupgrade image in $OUT, found:" >&2
     printf '      %s\n' "${factories[@]}" "${sysupgrades[@]}" >&2
@@ -124,25 +119,22 @@ done
 # --- 6. FULLFLASH (u-boot + firmware + art), only when a router backup exists ----
 # The dumps are device-unique and not in git. The newest backup's timestamped
 # folder sorts last.
-shopt -s nullglob
 backups=("$PROJECT_DIR"/firmware/router-backup/*/)
 bkdir=""; arts=()
 if [ ${#backups[@]} -gt 0 ]; then
     bkdir="${backups[${#backups[@]}-1]%/}"
     arts=("$bkdir"/mtd*art*.bin)
 fi
-shopt -u nullglob
 if [ -n "$bkdir" ] && [ -f "$bkdir/mtd0_u-boot.bin" ] && [ ${#arts[@]} -gt 0 ]; then
     uboot="$bkdir/mtd0_u-boot.bin"
     art="${arts[0]}"
     echo "[i] Using backup: $bkdir"
-    #   0x000000 u-boot | 0x020000 firmware | 0xFF0000 art ; gaps = 0xFF (erased).
     full="$dest/full16-wr941nd-v4.bin"
-    echo "[*] Assembling $full (16 MB, 0xFF-filled) ..."
-    head -c 16777216 /dev/zero | tr '\000' '\377' > "$full"
-    dd if="$uboot"   of="$full" bs=64k seek=0        oflag=seek_bytes conv=notrunc status=none
-    dd if="$factory" of="$full" bs=64k seek=131072   oflag=seek_bytes conv=notrunc status=none
-    dd if="$art"     of="$full" bs=64k seek=16711680 oflag=seek_bytes conv=notrunc status=none
+    echo "[*] Assembling $full (16 MB, 0xFF-filled like erased flash) ..."
+    head -c $((16 << 20)) /dev/zero | tr '\000' '\377' > "$full"
+    dd if="$uboot"   of="$full" bs=64k seek=0             oflag=seek_bytes conv=notrunc status=none
+    dd if="$factory" of="$full" bs=64k seek=$((0x020000)) oflag=seek_bytes conv=notrunc status=none
+    dd if="$art"     of="$full" bs=64k seek=$((0xFF0000)) oflag=seek_bytes conv=notrunc status=none
 else
     full=""
     echo "[i] No router backup under firmware/router-backup/ -> skipping the"
