@@ -15,17 +15,13 @@
 # (u-boot + firmware + art) for writing the new chip with flashrom.
 #
 # Knobs (env vars -- no TTY needed):
-#   DEVICE=<name>          device pin to use when several ci/*.env exist
+#   DEVICE=<name>          device pin to use; required when several ci/*.env exist
 #   TAG=vX.Y.Z             override the pinned OpenWrt tag (skips the
 #                          OPENWRT_COMMIT check, which belongs to the pin)
 #   JOBS=N                 parallel build jobs (lower it if the build OOMs)
 #   OPENWRT_SRC_ROOT=dir   where source trees live
 #                          (default ~/.local/share/openwrt-wr941nd)
 #   DRY_RUN=1              print the resolved plan and exit, changing nothing
-#
-# An interactive menu appears ONLY when several device pins exist, DEVICE is
-# unset and stdin is a TTY; non-interactive callers get a fast failure that
-# lists the exact DEVICE=... values instead.
 set -euo pipefail
 # shellcheck source=_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
@@ -39,10 +35,6 @@ if [ -n "${DEVICE:-}" ]; then
     [ -f "$ENV_FILE" ] || { echo "[!] ci/$DEVICE.env not found." >&2; exit 1; }
 elif [ ${#envs[@]} -eq 1 ]; then
     ENV_FILE="${envs[0]}"
-elif [ -t 0 ]; then
-    echo "Select a device to build:"
-    names=(); for f in "${envs[@]}"; do names+=("$(basename "$f" .env)"); done
-    select n in "${names[@]}"; do ENV_FILE="$PROJECT_DIR/ci/$n.env"; break; done
 else
     echo "[!] Several device pins exist; pick one with DEVICE=<name>:" >&2
     for f in "${envs[@]}"; do echo "      DEVICE=$(basename "$f" .env) $0" >&2; done
