@@ -5,7 +5,7 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "OPENWRT_TAG pin in the per-device ci/*.env files and the commit it resolves to (OPENWRT_COMMIT, on the next line), tracked against OpenWrt's release tags (github.com mirror of git.openwrt.org)",
+      "description": "OPENWRT_TAG in ci/*.env and the commit it resolves to (OPENWRT_COMMIT, on the next line), from OpenWrt's release tags",
       "managerFilePatterns": ["/^ci/.*\\.env$/"],
       "matchStrings": ["OPENWRT_TAG=(?<currentValue>v[0-9][0-9.]*)\\nOPENWRT_COMMIT=(?<currentDigest>[0-9a-f]{40})"],
       "depNameTemplate": "openwrt/openwrt",
@@ -14,7 +14,7 @@
     },
     {
       "customType": "regex",
-      "description": "Tools downloaded by the workflows: a '# renovate: datasource=... depName=...' comment above a line holding version=<tag> sum=<sha256>. With github-release-attachments the sum is the release asset's sha256, which Renovate maps to the new release through its checksums file.",
+      "description": "Tools downloaded by the workflows: a '# renovate: datasource=... depName=...' comment above a line holding version=<tag> sum=<sha256>; github-release-attachments takes the new sum from the release's checksums file",
       "managerFilePatterns": ["/^\\.github/workflows/.+\\.ya?ml$/"],
       "matchStrings": ["# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n[^\\n]*version=(?<currentValue>\\S+) sum=(?<currentDigest>[0-9a-f]{64})"],
       "versioningTemplate": "semver-coerced"
@@ -22,30 +22,30 @@
   ],
   "packageRules": [
     {
-      "description": "OpenWrt: auto-PR only for patch releases within the pinned series; a series jump (major/minor, e.g. 25.12 -> 26.x) needs a manual DTS/seed review first, so it waits for approval on the dependency dashboard",
+      "description": "An OpenWrt series jump (major/minor) can need DTS or seed changes: it waits for approval on the dependency dashboard",
       "matchDepNames": ["openwrt/openwrt"],
       "matchUpdateTypes": ["major", "minor"],
       "dependencyDashboardApproval": true
     },
     {
-      "description": "Pin container base images by digest (reproducibility: a floating debian:bookworm tag is the weakest link of the supply chain)",
+      "description": "Pin container base images by digest: a floating tag would change the toolchain under a reproducible build",
       "matchDatasources": ["docker"],
       "pinDigests": true
     },
     {
-      "description": "Base image major bumps (e.g. debian bookworm -> trixie) change the whole toolchain and need a deliberate, tested switch -- approval only",
+      "description": "A base-image major bump changes the whole toolchain: approval only",
       "matchDatasources": ["docker"],
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true
     },
     {
-      "description": "Build tooling (base-image digests, GitHub Actions) is never urgent: collect it into one PR on the 1st of each month (UTC) instead of one PR per update. OpenWrt bumps are not affected.",
+      "description": "Build tooling is never urgent: one grouped PR on the 1st of each month",
       "matchManagers": ["dockerfile", "github-actions"],
       "groupName": "build tooling",
       "schedule": ["* * 1 * *"]
     },
     {
-      "description": "Workflow-downloaded tools (actionlint) join the same monthly build-tooling PR.",
+      "description": "Workflow-downloaded tools join the same monthly PR",
       "matchDepNames": ["rhysd/actionlint"],
       "groupName": "build tooling",
       "schedule": ["* * 1 * *"]
