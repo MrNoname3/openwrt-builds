@@ -39,6 +39,7 @@ echo "[*] Target: $HOST   ->   $dest   (RUNS=$RUNS)"
 
 # --- Connectivity + metadata --------------------------------------------------
 echo "[*] Reading partition map and device info ..."
+# shellcheck disable=SC2016 # the script runs on the router; it expands there
 "${SSH[@]}" "$HOST" '
     echo "### /proc/mtd"; cat /proc/mtd
     echo "### /etc/openwrt_release"; cat /etc/openwrt_release 2>/dev/null
@@ -85,7 +86,7 @@ for r in $(seq 1 "$RUNS"); do
         "${SSH[@]}" "$HOST" "cat /dev/mtd$i" > "$out"
         printf '      mtd%s %-12s %8s bytes\n' "$i" "$n" "$(stat -c%s "$out")"
     done
-    ( cd "$rd" && sha256sum *.bin > SHA256SUMS )
+    ( cd "$rd" && sha256sum -- *.bin > SHA256SUMS )
 done
 
 # --- Cross-check passes -------------------------------------------------------
@@ -128,7 +129,7 @@ if [ "$consistent" -eq 1 ]; then
     else
         echo "[!] No sysfs offsets — skipping full-flash.bin (per-partition dumps are complete)."
     fi
-    ( cd "$dest" && sha256sum *.bin > SHA256SUMS )
+    ( cd "$dest" && sha256sum -- *.bin > SHA256SUMS )
 else
     echo "[!] Passes NOT identical — keeping all runs for inspection (nothing deleted)."
 fi

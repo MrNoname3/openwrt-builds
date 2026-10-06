@@ -52,10 +52,10 @@ fi
 # --- read the pin (post-merge content) --------------------------------------
 OPENWRT_TAG=$(sed -n 's/^OPENWRT_TAG=//p' "$ENV_FILE")
 DEVICE_NAME=$(sed -n 's/^DEVICE_NAME=//p' "$ENV_FILE")
-[ -n "$OPENWRT_TAG" ] && [ -n "$DEVICE_NAME" ] || {
+if [ -z "$OPENWRT_TAG" ] || [ -z "$DEVICE_NAME" ]; then
     echo "OPENWRT_TAG/DEVICE_NAME missing from $ENV_FILE" >&2
     exit 1
-}
+fi
 TAG="${OPENWRT_TAG}-${DEVICE_NAME}"
 
 if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then

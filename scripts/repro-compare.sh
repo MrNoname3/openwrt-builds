@@ -7,11 +7,12 @@
 #
 # Usage:  scripts/repro-compare.sh imageA-sysupgrade.bin imageB-sysupgrade.bin
 set -euo pipefail
+# shellcheck source=_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
 [ $# -eq 2 ] || { echo "usage: $0 <A-sysupgrade.bin> <B-sysupgrade.bin>" >&2; exit 1; }
 A="$(realpath "$1")"; B="$(realpath "$2")"
-[ -f "$A" ] && [ -f "$B" ] || { echo "[!] input image not found" >&2; exit 1; }
+if [ ! -f "$A" ] || [ ! -f "$B" ]; then echo "[!] input image not found" >&2; exit 1; fi
 
 ensure_image
 

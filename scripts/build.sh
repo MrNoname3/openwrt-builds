@@ -26,6 +26,7 @@
 # unset and stdin is a TTY; non-interactive callers get a fast failure that
 # lists the exact DEVICE=... values instead.
 set -euo pipefail
+# shellcheck source=_common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
 # --- 1. Select the device pin -------------------------------------------------
@@ -52,8 +53,9 @@ OPENWRT_TAG=""; SEED_FILE=""; DEVICE_NAME=""
 # shellcheck source=/dev/null
 source "$ENV_FILE"
 OPENWRT_TAG="${TAG:-$OPENWRT_TAG}"
-[ -n "$OPENWRT_TAG" ] && [ -n "$SEED_FILE" ] || {
-    echo "[!] $ENV_FILE must set OPENWRT_TAG and SEED_FILE." >&2; exit 1; }
+if [ -z "$OPENWRT_TAG" ] || [ -z "$SEED_FILE" ]; then
+    echo "[!] $ENV_FILE must set OPENWRT_TAG and SEED_FILE." >&2; exit 1
+fi
 
 series="${OPENWRT_TAG#v}"; series="${series%.*}" # v25.12.5 -> 25.12
 SRC_ROOT="${OPENWRT_SRC_ROOT:-$HOME/.local/share/openwrt-wr941nd}"
@@ -128,10 +130,18 @@ done
 # The dumps are device-unique (MAC in u-boot, WiFi calibration in art) and are
 # not in git, so a fresh clone skips this; sysupgrade-based updates need only the
 # images above.
-bkdir="$(ls -d "$PROJECT_DIR"/firmware/router-backup/*/ 2>/dev/null | sort | tail -1 || true)"
-if [ -n "$bkdir" ] && [ -f "$bkdir/mtd0_u-boot.bin" ] && ls "$bkdir"/mtd*art*.bin >/dev/null 2>&1; then
+# The newest backup: its timestamped folder name sorts last.
+shopt -s nullglob
+backups=("$PROJECT_DIR"/firmware/router-backup/*/)
+bkdir=""; arts=()
+if [ ${#backups[@]} -gt 0 ]; then
+    bkdir="${backups[${#backups[@]}-1]%/}"
+    arts=("$bkdir"/mtd*art*.bin)
+fi
+shopt -u nullglob
+if [ -n "$bkdir" ] && [ -f "$bkdir/mtd0_u-boot.bin" ] && [ ${#arts[@]} -gt 0 ]; then
     uboot="$bkdir/mtd0_u-boot.bin"
-    art="$(ls "$bkdir"/mtd*art*.bin 2>/dev/null | head -1)"
+    art="${arts[0]}"
     echo "[i] Using backup: $bkdir"
     #   0x000000 u-boot | 0x020000 firmware | 0xFF0000 art ; gaps = 0xFF (erased).
     full="$dest/full16-wr941nd-v4.bin"

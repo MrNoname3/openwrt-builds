@@ -50,7 +50,7 @@ EOF
 # 2. Rootfs: extract both squashfs and diff the trees.
 unsquashfs -q -d "$WORK/a-root" "$WORK/a.sqfs" > /dev/null 2>&1 || true
 unsquashfs -q -d "$WORK/b-root" "$WORK/b.sqfs" > /dev/null 2>&1 || true
-[ -d "$WORK/a-root" ] && [ -d "$WORK/b-root" ] || { echo "[!] unsquashfs failed"; exit 1; }
+if [ ! -d "$WORK/a-root" ] || [ ! -d "$WORK/b-root" ]; then echo "[!] unsquashfs failed"; exit 1; fi
 
 # -q makes diff report EVERY differing file uniformly as "Files ... differ"
 # (without it, text files get inline line-diffs the parser below would miss).
