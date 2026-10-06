@@ -228,39 +228,16 @@ other difference is a supply-chain red flag.
 | [scripts/tag-release.sh](scripts/tag-release.sh) | tag the merged bump on Gitea → GitHub builds the Release |
 | [Containerfile.modern](Containerfile.modern) | Debian bookworm build container (24.10/25.12) |
 | [docs/hardware-mod.md](docs/hardware-mod.md) | the flash + RAM upgrade guide |
+| [docs/operations.md](docs/operations.md) | running the AP: setup, updates, harmless messages, pitfalls |
+| [CLAUDE.md](CLAUDE.md) | how to work on this repo: ground rules, forge topology, gotchas |
 | `firmware/` | not in git: backups, dumps and built images |
 | [Containerfile](Containerfile), `scripts/{fw,img}-build.sh`, `scripts/shell.sh`, `scripts/clean.sh`, `config/*18.06*` | legacy 18.06/ar71xx flow → [docs/legacy-18.06.md](docs/legacy-18.06.md). These do **not** touch the current 16M build tree |
 
 ## Operations / troubleshooting (deployed AP)
 
-### Spontaneous reboot due to serial console + SysRq (IMPORTANT)
-
-Symptom: the AP **reboots on its own** (`dmesg`/`logread` only shows
-`Watchdog has previously reset the system`, no OOM/panic/crash), typically
-around serial-adapter plug/unplug — or when the soldered serial **pin header
-is left unconnected on the board**.
-
-Cause: the kernel runs with `console=ttyS0,115200` and **SysRq enabled by
-default**; a floating/noisy serial line can produce a **BREAK**, which the
-kernel interprets as a SysRq command. The AR7240 watchdog (30 s) then resets
-the stuck system.
-
-Fix (applied on this unit, no downside on a headless AP — serial *output*
-still works):
-
-```sh
-echo 0 > /proc/sys/kernel/sysrq
-echo 'kernel.sysrq=0' >> /etc/sysctl.conf
-```
-
-Also: plug/unplug the serial adapter only with the board powered off, or
-connect **GND first / disconnect it last**.
-
-### Historical: RAM on the stock 32 MB
-
-Pre-mod, 24.10 + LuCI + 802.11r left ~7 MB free — no OOM but no headroom, and
-25.12 didn't fit at all (constant OOM reboots). This is what motivated the
-64 MB upgrade; post-mod there is ~19 MB free + ~17 MB cache.
+Dumb-AP setup, updating, harmless log messages and known pitfalls — including
+the **spontaneous reboots a connected serial header can cause** — are in
+[docs/operations.md](docs/operations.md).
 
 ## Legacy: the original 18.06 flow
 

@@ -98,6 +98,12 @@ built in CI and never published in releases.
 flashrom -p ch341a_spi -c XT25F128B -w full16-wr941nd-v4.bin   # -c per your chip
 ```
 
+Pass the chip name flashrom detects, not the one printed on the package:
+cheap W25Q128 parts are often relabelled clones (this unit's chip, labelled
+Winbond 25Q128JVSQ, identifies as XTX XT25F128B). flashrom flags that chip's
+write protection as untested, which does not matter here. A new chip should
+read back as all `0xFF`.
+
 `flashrom -w` verifies after writing; for extra certainty read it back and
 compare:
 
@@ -121,11 +127,20 @@ cleanly.
 ## Step 6 — first boot & checks
 
 A serial console (soldered header, 115200 8N1) is essentially mandatory for
-this stage — but read the SysRq warning in the README's Operations section
+this stage — but read the [SysRq warning](operations.md#spontaneous-reboots-from-the-serial-consoles-sysrq)
 before leaving the header attached.
 
+The AR7240's UART TX line is driven weakly: without help the output is garbled
+and the console takes no input. Pull the board's TX up to its 3.3 V pin through
+a resistor (10–22 kΩ; lower values give cleaner output). Wire board TX → adapter
+RX, board RX → adapter TX and a common GND, and power the router from its own
+supply — never connect the adapter's VCC to the board.
+
 Expected: u-boot banner → `DRAM: 64 MB` → kernel boot → OpenWrt on
-`192.168.1.1` (fresh config). Verify:
+`192.168.1.1` (fresh config). u-boot prints `Flash: 04 MB` because its chip
+table does not know the new part; that is harmless, since it only reads the
+kernel from the first 4 MB. The very first boot takes about 1.5 minutes while
+the overlay is created. Verify:
 
 ```
 free            # ~59 MB total
