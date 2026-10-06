@@ -1,5 +1,5 @@
 # Build the custom 16MB TL-WR941ND v4 firmware from source, exactly like the
-# local build: same Containerfile image, same _inner-build-16m.sh, same
+# local build: same Containerfile image, same _inner-build.sh, same
 # seed -- so a local podman build and this CI build are directly comparable
 # (supply-chain cross-check).
 #
@@ -120,7 +120,7 @@ jobs:
             -v "$PWD/scripts:/opt/scripts:ro" \
             -e SEED_FILE="$SEED_FILE" \
             -u 1000:1000 -w /work \
-            openwrt-builder bash /opt/scripts/_inner-build-16m.sh
+            openwrt-builder bash /opt/scripts/_inner-build.sh
           sudo chown -R "$(id -u):$(id -g)" "$HOME/openwrt"
 
       - name: Collect artifacts

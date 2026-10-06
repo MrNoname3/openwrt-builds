@@ -3,13 +3,13 @@
 # Injects the custom 16MB DTS + device definition, applies the seed config, and
 # builds the firmware for the custom tplink_tl-wr941-v4-16m device.
 #
-# Mounts (provided by build-16m.sh, or by the CI workflow):
+# Mounts (provided by build.sh, or by the CI workflow):
 #   /work        -> OpenWrt source tree at the pinned tag (read-write, persistent)
 #   /opt/config  -> project config/ (read-only)
 #   /opt/scripts -> project scripts/ (read-only)
 set -euo pipefail
 
-# SEED_FILE comes from the pin file (ci/*.env) via build-16m.sh or the CI workflow.
+# SEED_FILE comes from the pin file (ci/*.env) via build.sh or the CI workflow.
 SEED="/opt/config/${SEED_FILE:?SEED_FILE must name a seed under config/}"
 DTS_SRC="/opt/config/ath79-16m/ar7240_tplink_tl-wr941-v4-16m.dts"
 DEV_SRC="/opt/config/ath79-16m/tplink_tl-wr941-v4-16m.device.mk"
@@ -31,8 +31,8 @@ cp -f "$DTS_SRC" target/linux/ath79/dts/
 mk=target/linux/ath79/image/tiny-tp-link.mk
 # Refresh: drop any previously injected block, then append the current one, so
 # edits to the device definition always take effect on rebuild.
-sed -i '/# --- injected by build-16m.sh ---/,$d' "$mk"
-{ echo; echo "# --- injected by build-16m.sh ---"; cat "$DEV_SRC"; } >> "$mk"
+sed -i '/# --- injected by _inner-build.sh ---/,$d' "$mk"
+{ echo; echo "# --- injected by _inner-build.sh ---"; cat "$DEV_SRC"; } >> "$mk"
 
 # 3. Config -------------------------------------------------------------------
 echo "[*] Applying seed config + defconfig ..."

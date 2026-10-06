@@ -105,7 +105,7 @@ GitHub; GitHub Actions is the build + release executor (an OpenWrt build is
 too heavy for the Gitea box — and an *independent* build infrastructure is
 what makes the reproducibility cross-check meaningful). The CI runs the
 **same build** as `build.sh`: same `Containerfile` container, same
-`_inner-build-16m.sh`, same seed, same pin file. Pieces:
+`_inner-build.sh`, same seed, same pin file. Pieces:
 
 - **`ci/wr941nd-v4-16m.env`** — the single source of truth: `OPENWRT_TAG`
   (exact release), `SEED_FILE`, `DEVICE_NAME`. Both CI and `build.sh` read it.
@@ -213,9 +213,8 @@ other difference is a supply-chain red flag.
 
 | Path | Role |
 |------|------|
-| [scripts/build.sh](scripts/build.sh) | **entry point** — pin-driven build, bootstraps everything |
-| [scripts/build-16m.sh](scripts/build-16m.sh) | 16M build + FULLFLASH assembly (called by build.sh) |
-| [scripts/_inner-build-16m.sh](scripts/_inner-build-16m.sh) | in-container build: DTS/profile injection + seed + make |
+| [scripts/build.sh](scripts/build.sh) | **entry point** — pin-driven build, bootstraps everything, assembles the FULLFLASH |
+| [scripts/_inner-build.sh](scripts/_inner-build.sh) | in-container build: DTS/profile injection + seed + make |
 | [scripts/repro-compare.sh](scripts/repro-compare.sh) | reproducibility check of two same-tag images |
 | [scripts/router-backup.sh](scripts/router-backup.sh) | mtd partition backup over SSH, 3× verified |
 | [config/wr941nd-v4-25.12-16m.seed.config](config/wr941nd-v4-25.12-16m.seed.config) | current seed (LuCI, HTTPS, ed25519, deterministic banner) |

@@ -24,7 +24,7 @@ What the project is and how to build and release it is in the
   images brick it.
 - **Do not change the deployed AP** (config, reboot, sysupgrade) without the
   owner's explicit go-ahead. Reading its state is fine.
-- Commit subjects use an area prefix — `docs:`, `ci:`, `seed:`, `build-16m:`,
+- Commit subjects use an area prefix — `docs:`, `ci:`, `seed:`, `build:`,
   `renovate:`, `tag-release:` — one concern per commit.
 
 ## Where things live
@@ -45,7 +45,7 @@ signature; copy the project keypair into the tree root before the first build
 when bit-identity with CI matters.
 
 The container image carries the sha256 of the `Containerfile` it was
-built from; `build-16m.sh` and `repro-compare.sh` rebuild it when the file
+built from; `build.sh` and `repro-compare.sh` rebuild it when the file
 changes (Renovate digest bumps included), so local builds use the same base as
 CI.
 

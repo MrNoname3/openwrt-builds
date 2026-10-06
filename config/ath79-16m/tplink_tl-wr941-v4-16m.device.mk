@@ -1,5 +1,5 @@
 # Custom device definition for the 16MB-flash TL-WR941ND v4.
-# Appended to target/linux/ath79/image/tiny-tp-link.mk by build-16m.sh.
+# Appended to target/linux/ath79/image/tiny-tp-link.mk by scripts/_inner-build.sh.
 #
 # IMPORTANT: this device's stock u-boot can only gunzip, NOT decompress lzma
 # (confirmed: the stock booting kernel is the gzip okli loader). So we MUST use

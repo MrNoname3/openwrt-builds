@@ -78,8 +78,8 @@ OpenWrt recipe:
 
 ## Step 3 — assemble the full-chip image (FULLFLASH)
 
-`scripts/build-16m.sh` (which `build.sh` calls) does this automatically when a
-backup exists under `firmware/router-backup/`:
+`scripts/build.sh` does this automatically when a backup exists under
+`firmware/router-backup/`:
 
 ```
 0x000000  mtd0_u-boot.bin      (128 KiB, from YOUR backup)
