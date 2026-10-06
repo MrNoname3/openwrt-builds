@@ -1,9 +1,6 @@
 {
-  // Portable VS Code workspace. Clone the repo anywhere and open this file
-  // ("File > Open Workspace from File…") — everything below uses relative paths,
-  // so it just works, with no machine-specific settings baked in. Mirrors
-  // .vscode/settings.json and .vscode/extensions.json (used for "Open Folder");
-  // whitespace rules live in .editorconfig.
+  // "Open Workspace from File" settings, mirroring .vscode/; relative paths
+  // only, so it works from any clone. Whitespace rules are in .editorconfig.
   "folders": [
     {
       "path": "."
@@ -23,9 +20,7 @@
     "editor.rulers": [100]
   },
   "extensions": {
-    // Offered on open so a fresh machine gets the same linting the CI enforces:
-    // EditorConfig applies .editorconfig, shellcheck lints scripts, YAML +
-    // GitHub Actions cover the workflows.
+    // EditorConfig, plus editor-side linting for what scripts/check.sh checks.
     "recommendations": [
       "editorconfig.editorconfig",
       "timonwong.shellcheck",

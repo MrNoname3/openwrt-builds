@@ -1,7 +1,5 @@
 {
-  // Offered on open so a fresh machine gets the same linting the CI enforces:
-  // EditorConfig applies .editorconfig, shellcheck lints scripts, YAML + GitHub
-  // Actions cover the workflows.
+  // EditorConfig, plus editor-side linting for what scripts/check.sh checks.
   "recommendations": [
     "editorconfig.editorconfig",
     "timonwong.shellcheck",
