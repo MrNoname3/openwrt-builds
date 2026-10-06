@@ -24,22 +24,22 @@ fi
 
 podman_run() { "${PODMAN[@]}" "$@"; }
 
-# Build container, from Containerfile.modern.
-MODERN_IMAGE="openwrt-builder-modern"
+# The build container image.
+IMAGE="openwrt-builder"
 
-# Build MODERN_IMAGE, or rebuild it when Containerfile.modern differs from the
-# one it was built from, whose sha256 is recorded in an image label.
-ensure_modern_image() {
-    local file="$PROJECT_DIR/Containerfile.modern" want have old
+# Build IMAGE, or rebuild it when the Containerfile differs from the one it was
+# built from (its sha256 is recorded in an image label).
+ensure_image() {
+    local file="$PROJECT_DIR/Containerfile" want have old
     want="$(sha256sum "$file" | cut -d' ' -f1)"
     have="$(podman_run image inspect --format '{{index .Labels "containerfile.sha256"}}' \
-        "$MODERN_IMAGE" 2>/dev/null || true)"
+        "$IMAGE" 2>/dev/null || true)"
     [ "$have" = "$want" ] && return 0
 
-    old="$(podman_run image inspect --format '{{.Id}}' "$MODERN_IMAGE" 2>/dev/null || true)"
-    echo "[*] Building container image '$MODERN_IMAGE' from Containerfile.modern ..."
+    old="$(podman_run image inspect --format '{{.Id}}' "$IMAGE" 2>/dev/null || true)"
+    echo "[*] Building container image '$IMAGE' from Containerfile ..."
     podman_run build --label "containerfile.sha256=$want" \
-        -t "$MODERN_IMAGE" -f "$file" "$PROJECT_DIR"
+        -t "$IMAGE" -f "$file" "$PROJECT_DIR"
     # The previous build is left untagged; remove it unless a container uses it.
     if [ -n "$old" ]; then podman_run rmi "$old" >/dev/null 2>&1 || true; fi
 }

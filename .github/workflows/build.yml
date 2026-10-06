@@ -1,5 +1,5 @@
 # Build the custom 16MB TL-WR941ND v4 firmware from source, exactly like the
-# local build: same Containerfile.modern image, same _inner-build-16m.sh, same
+# local build: same Containerfile image, same _inner-build-16m.sh, same
 # seed -- so a local podman build and this CI build are directly comparable
 # (supply-chain cross-check).
 #
@@ -28,7 +28,7 @@ on:
       - 'ci/**'
       - 'config/**'
       - 'scripts/**'
-      - 'Containerfile.modern'
+      - 'Containerfile'
       - '.github/workflows/build.yml'
   push:
     branches: ['renovate/**']
@@ -74,7 +74,7 @@ jobs:
           df -h /
 
       - name: Build the builder container image
-        run: docker build -t openwrt-builder-modern -f Containerfile.modern .
+        run: docker build -t openwrt-builder -f Containerfile .
 
       - name: Clone OpenWrt at the pinned tag
         # github.com mirror of git.openwrt.org -- identical tags, much faster
@@ -128,7 +128,7 @@ jobs:
             -v "$PWD/scripts:/opt/scripts:ro" \
             -e SEED_FILE="$SEED_FILE" \
             -u 1000:1000 -w /work \
-            openwrt-builder-modern bash /opt/scripts/_inner-build-16m.sh
+            openwrt-builder bash /opt/scripts/_inner-build-16m.sh
           sudo chown -R "$(id -u):$(id -g)" "$HOME/openwrt"
 
       - name: Collect artifacts

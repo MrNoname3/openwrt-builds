@@ -104,7 +104,7 @@ The **source of truth is a self-hosted Gitea instance**, push-mirrored to
 GitHub; GitHub Actions is the build + release executor (an OpenWrt build is
 too heavy for the Gitea box — and an *independent* build infrastructure is
 what makes the reproducibility cross-check meaningful). The CI runs the
-**same build** as `build.sh`: same `Containerfile.modern` container, same
+**same build** as `build.sh`: same `Containerfile` container, same
 `_inner-build-16m.sh`, same seed, same pin file. Pieces:
 
 - **`ci/wr941nd-v4-16m.env`** — the single source of truth: `OPENWRT_TAG`
@@ -181,7 +181,7 @@ One-time setup after forking:
    consequence of *this* repo's push mirror, not of the tooling. Rename the
    branch check if your default branch is `main`.
 
-> **Note on the build container.** `Containerfile.modern` stays on Debian
+> **Note on the build container.** `Containerfile` stays on Debian
 > **bookworm** deliberately: a base image swap changes the toolchain and
 > invalidates the reproducibility baseline, so it is an approval-only decision
 > rather than an automatic bump.
@@ -223,7 +223,7 @@ other difference is a supply-chain red flag.
 | [ci/wr941nd-v4-16m.env](ci/wr941nd-v4-16m.env) | device pin: OpenWrt tag + seed (single source of truth) |
 | [renovate.json](renovate.json) | Renovate: OpenWrt tag bumps, action SHA pins, base-image digests |
 | [scripts/tag-release.sh](scripts/tag-release.sh) | tag the merged bump on Gitea → GitHub builds the Release |
-| [Containerfile.modern](Containerfile.modern) | Debian bookworm build container (24.10/25.12) |
+| [Containerfile](Containerfile) | Debian bookworm build container (24.10/25.12) |
 | [docs/hardware-mod.md](docs/hardware-mod.md) | the flash + RAM upgrade guide |
 | [docs/operations.md](docs/operations.md) | running the AP: setup, updates, harmless messages, pitfalls |
 | [CLAUDE.md](CLAUDE.md) | how to work on this repo: ground rules, forge topology, gotchas |

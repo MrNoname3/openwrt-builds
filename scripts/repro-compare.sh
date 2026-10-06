@@ -13,12 +13,12 @@ source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 A="$(realpath "$1")"; B="$(realpath "$2")"
 [ -f "$A" ] && [ -f "$B" ] || { echo "[!] input image not found" >&2; exit 1; }
 
-ensure_modern_image
+ensure_image
 
 podman_run run --rm \
     --userns=keep-id \
     -v "$A:/cmp/A.bin:ro,Z" \
     -v "$B:/cmp/B.bin:ro,Z" \
     -v "$PROJECT_DIR/scripts:/opt/scripts:ro,Z" \
-    "$MODERN_IMAGE" \
+    "$IMAGE" \
     bash /opt/scripts/_inner-repro-compare.sh /cmp/A.bin /cmp/B.bin

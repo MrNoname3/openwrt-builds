@@ -28,7 +28,7 @@ BUILD_TAG="${BUILD_TAG:-16m-24.10}"
 [ -d "$SRC24/.git" ] || { echo "[!] 24.10 source not found at $SRC24" >&2; exit 1; }
 
 # 1. Modern build image --------------------------------------------------------
-ensure_modern_image
+ensure_image
 
 # 2. Firmware build inside the container ---------------------------------------
 echo "[*] Building firmware in container ..."
@@ -40,7 +40,7 @@ podman_run run --rm \
     -e "JOBS=${JOBS:-}" \
     -e "SEED_FILE=${SEED_FILE:-}" \
     -w /work \
-    "$MODERN_IMAGE" \
+    "$IMAGE" \
     bash /opt/scripts/_inner-build-16m.sh
 
 # 3. Locate the built firmware images -----------------------------------------
