@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Back up the running router's flash (mtd partitions) over SSH -- no chip readout
 # needed. Reading /dev/mtdN is non-destructive. Captures u-boot, ART/calibration,
-# firmware, config etc. plus the partition map -- exactly what phase 3 (16MB flash
-# transplant) needs (ART is device-unique!).
+# firmware, config etc. plus the partition map -- exactly what the 16MB flash
+# transplant needs (ART is device-unique!).
 #
 # Does RUNS (default 3) independent dump passes and cross-checks them by sha256.
 # NOR flash reads are deterministic, so all passes must match; if they do, only
@@ -138,4 +138,4 @@ echo "[✓] Backup at: $dest"
 ls -lh "$dest"
 echo
 echo "IMPORTANT: the ART/calibration partition is device-unique (WiFi radio cal)."
-echo "Keep this backup safe — it is needed for the 16MB flash transplant (phase 3)."
+echo "Keep this backup safe — it is needed for the 16MB flash transplant."

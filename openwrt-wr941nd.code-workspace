@@ -24,12 +24,7 @@
 		// Treat the project's non-standard file types sensibly.
 		"files.associations": {
 			"*.seed.config": "properties",
-			"Containerfile*": "dockerfile",
-			"*.nft": "shellscript",
-			"shinit": "shellscript",
-			"rc.local": "shellscript",
-			"*/etc/config/*": "properties",
-			"*/uci-defaults/*": "shellscript"
+			"Containerfile": "dockerfile"
 		},
 		"[shellscript]": {
 			"editor.tabSize": 4,
