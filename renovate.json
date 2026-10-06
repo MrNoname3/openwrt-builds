@@ -30,6 +30,12 @@
       "matchDatasources": ["docker"],
       "matchUpdateTypes": ["major"],
       "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Build tooling (base-image digests, GitHub Actions) is never urgent: collect it into one PR on the 1st of each month (UTC) instead of one PR per update. OpenWrt bumps are not affected.",
+      "matchManagers": ["dockerfile", "github-actions"],
+      "groupName": "build tooling",
+      "schedule": ["* * 1 * *"]
     }
   ]
 }

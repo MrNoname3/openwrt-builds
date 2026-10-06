@@ -114,8 +114,8 @@ what makes the reproducibility cross-check meaningful). The CI runs the
   pinned series → auto-PR on Gitea; a **series jump** (e.g. v26.x) waits for
   approval on the dependency dashboard, because it needs manual DTS/seed
   review first (the 24.10→25.12 nvmem-layout change is the precedent).
-  Renovate also bumps the SHA-pinned GitHub Actions and digest-pins the
-  container base images.
+  Renovate also bumps the SHA-pinned GitHub Actions and the container base
+  image digest, collected into one "build tooling" PR on the 1st of each month.
 - **`.github/workflows/build.yml`** — a push to a `renovate/**` branch
   (arriving via the mirror) runs a **canary build**; a `v*` **tag** push
   builds and publishes the **Release** (`<tag>-wr941nd-v4-16m`: factory +
