@@ -1,34 +1,30 @@
 # OpenWrt builds — TP-Link TL-WR941ND v4 (16 MB / 64 MB mod)
 
 Custom OpenWrt firmware for a hardware-modded **TL-WR941ND v4** (Atheros
-AR7240, `ath79`/`tiny`): **4→16 MB flash + 32→64 MB RAM**. Stock hardware died
-with OpenWrt 18.06/19.07; the modded device runs the **current 25.12 series**
-built from this repo, in production, as a dumb AP.
+AR7240, `ath79`/`tiny`): **4→16 MB flash + 32→64 MB RAM**. The stock hardware
+cannot run current OpenWrt; the modded device runs it, built from this repo, in
+production as a dumb AP.
 
 What lives here:
 
 - a **containerized buildroot** (rootless podman, nothing installed on the host)
   that injects a custom 16 MB DTS/device profile into a stock OpenWrt tree;
 - **GitHub Actions CI** that builds the exact same image and publishes
-  flashable **Releases** (new OpenWrt releases are picked up by Renovate on the
-  upstream Gitea, not by a workflow here — see [CI](#ci--automated-builds-and-releases));
+  flashable **Releases** (see [CI](#ci--automated-builds-and-releases));
 - a **reproducibility cross-check** proving the local and CI images are
   identical apart from a documented residue.
 
-> ⚠️ **Hardware requirement.** The images need **BOTH** mods: 16 MB flash
-> (W25Q128-class) **and** the 32→64 MB RAM upgrade. Stock 4 MB flash cannot
-> hold them, and current OpenWrt does not run reliably in the stock 32 MB RAM
-> ([why](docs/operations.md#why-32-mb-ram-is-not-enough)). **Never flash a
-> stock device**, and never use official OpenWrt images on a modded one (the
-> official `tplink,tl-wr941-v4` profile targets the 4 MB layout → brick).
+> ⚠️ **Hardware requirement — no safety net.** The images need **BOTH** mods:
+> 16 MB flash (W25Q128-class) **and** 64 MB RAM. Stock 4 MB flash cannot hold
+> them, and current OpenWrt does not run reliably in the stock 32 MB RAM
+> ([why](docs/operations.md#why-32-mb-ram-is-not-enough)).
 >
-> ⚠️ **No safety net — read this before you flash anything.** The modded board
-> still reports the stock compat string, so the 16M image *must* claim
-> `tplink,tl-wr941-v4` in `SUPPORTED_DEVICES` to be installable at all. The
-> consequence: **`sysupgrade` will happily accept these images on a stock 4 MB
-> device without `--force`**. The usual "wrong device" guard does not protect
-> you here. Only ever flash a board you personally modded, and keep the
-> FULLFLASH image + a programmer for recovery.
+> The modded board still reports the stock `tplink,tl-wr941-v4` compat string,
+> so these images must claim it to be installable at all. As a result
+> **`sysupgrade` accepts them on a stock device without `--force`, and bricks
+> it.** The other way round, official OpenWrt images and attended sysupgrade
+> target the 4 MB layout and brick a modded unit. Only flash a board you
+> modded yourself, and keep its FULLFLASH image and a programmer for recovery.
 
 ## From a stock unit to where this repo is — the complete path
 
@@ -36,8 +32,8 @@ If you own this router and want to end up here, this is the whole journey:
 
 1. **Gather parts & tools**: a 16 MB SOIC-8 SPI NOR chip (W25Q128 family), a
    64 MB ×16 DDR1 chip (same type AR7240 boards ship with in their 64 MB
-   variants), soldering iron/hot air, a SPI programmer (CH341A — do the 3.3 V
-   mod before writing!), a 3.3 V USB-UART for serial. Soldering SOIC-8 is
+   variants), soldering iron/hot air, a SPI programmer (e.g. CH341A), a 3.3 V
+   USB-UART for serial. Soldering SOIC-8 is
    easy; the DDR swap is the hard part.
 2. **Back up the original flash** — twice if you can (SSH + chip read). The
    `u-boot` (contains your MAC) and `art` (your radio calibration) regions are
@@ -45,25 +41,23 @@ If you own this router and want to end up here, this is the whole journey:
 3. **Swap the RAM** (and optionally recap while the board is open). The flash
    chip is *not* soldered yet — it gets written first, in step 5.
    → [docs/hardware-mod.md](docs/hardware-mod.md), step 5 (RAM swap).
-4. **Build the firmware**: `JOBS=4 ./scripts/build.sh` (below). With your
-   backup in place it also assembles the **full-chip image** (your u-boot +
-   new firmware + your art, at the right offsets).
+4. **Build the firmware** ([below](#building)). With your backup in place it
+   also assembles the **full-chip image**.
    → [docs/hardware-mod.md](docs/hardware-mod.md), steps 2–3.
 5. **Write the new chip with the programmer, solder it in, first boot,
    configure.**
    → [docs/hardware-mod.md](docs/hardware-mod.md), step 4 (write + solder) and
-   step 6 (first boot).
-6. **Updates from then on are software-only**: fork this repo for your own CI
-   (see [Forking](#forking-this-repo-for-your-own-device)) or just build
-   locally; new OpenWrt patch release → PR → Release → `sysupgrade` with
-   settings kept. The programmer is never needed again.
+   step 6 (first boot); setup in [docs/operations.md](docs/operations.md).
+6. **Updates from then on are software-only**: build locally or fork this repo
+   for your own CI (see [Forking](#forking-this-repo-for-your-own-device)),
+   then [sysupgrade](docs/operations.md#updating). The programmer is never
+   needed again.
 
 ## Building
 
 `scripts/build.sh` builds **exactly what the CI builds**, driven by the same
-per-device pin file (`ci/<device>.env`: `OPENWRT_TAG` + `SEED_FILE`). On a
-fresh machine it bootstraps everything itself (blobless OpenWrt clone at the
-pinned tag, container image, build):
+per-device pin file (`ci/<device>.env`). On a fresh machine it bootstraps
+everything itself (OpenWrt clone at the pinned tag, container image, build):
 
 ```bash
 git clone https://github.com/MrNoname3/openwrt-builds.git
@@ -77,9 +71,9 @@ trees live, a dry run) are environment variables listed at the top of
 
 Requirements: rootless **podman** (the scripts auto-detect a VS Code Flatpak
 terminal and go through `flatpak-spawn --host`), ~20 GB disk for the build
-tree, a full clean build takes ~2–4 h at `JOBS=4`. The tree deliberately lives
-**outside** the repo clone (`~/.local/share/openwrt-wr941nd/`), so 300k
-intermediate build files never land in the clone.
+tree, a full clean build takes ~2–4 h at `JOBS=4`. The tree lives **outside**
+the repo clone (`~/.local/share/openwrt-wr941nd/`), so its build files never
+land in the clone.
 
 Output → `firmware/built/16m-<version>/`: factory + sysupgrade + SHA256SUMS,
 plus the FULLFLASH full-chip image when a router backup exists locally (the
@@ -95,89 +89,63 @@ u-boot/art dumps are device-unique and not in git — see the
 ## CI — automated builds and releases
 
 The **source of truth is a self-hosted Gitea instance**, push-mirrored to
-GitHub; GitHub Actions is the build + release executor (an OpenWrt build is
-too heavy for the Gitea box — and an *independent* build infrastructure is
-what makes the reproducibility cross-check meaningful). The CI runs the
-**same build** as `build.sh`: same `Containerfile` container, same
-`_inner-build.sh`, same seed, same pin file. Pieces:
+GitHub, where Actions builds and releases. An OpenWrt build is too heavy for
+the Gitea box, and an *independent* build infrastructure is what makes the
+reproducibility cross-check meaningful. The CI runs the **same build** as
+`build.sh`: same container, same `_inner-build.sh`, same pin file. Pieces:
 
-- **`ci/wr941nd-v4-16m.env`** — the single source of truth: `OPENWRT_TAG`
-  (exact release) with `OPENWRT_COMMIT` (the commit it must resolve to),
-  `SEED_FILE`, `DEVICE_NAME`. Both CI and `build.sh` read it, and both refuse a
-  source tree whose commit differs from the pin.
-- **`renovate.json`** — a self-hosted Renovate (daily) bumps the
-  `OPENWRT_TAG`/`OPENWRT_COMMIT` pin from OpenWrt's release tags: a patch
-  release in the pinned series → auto-PR on Gitea; a **series jump** (e.g. v26.x) waits for
-  approval on the dependency dashboard, because it needs manual DTS/seed
-  review first (the 24.10→25.12 nvmem-layout change is the precedent).
-  Renovate also bumps the SHA-pinned GitHub Actions and the container base
-  image digest, collected into one "build tooling" PR on the 1st of each month.
-- **`.github/workflows/build.yml`** — a push to a `renovate/**` branch
-  (arriving via the mirror) runs a **canary build**; a `v*` **tag** push
-  builds and publishes the **Release** (`<tag>-wr941nd-v4-16m`: factory +
-  sysupgrade + manifest + SHA256SUMS — never the FULLFLASH). The build runs
-  with a read-only token; only the separate release job can write. Plain
-  `master` pushes do not build.
-- **`.github/workflows/check.yml`** — runs `scripts/check.sh` (secret scan,
-  shellcheck, yamllint, actionlint) on every push; written to run on Gitea
-  Actions as well.
-- **`scripts/tag-release.sh`** — run on master after merging a bump PR:
-  creates the release tag on Gitea; the mirror forwards it and GitHub
-  releases. (Tags must originate on Gitea — the push mirror prunes refs that
-  exist only on GitHub.)
+- **`ci/wr941nd-v4-16m.env`** — the pin: `OPENWRT_TAG` with the commit it must
+  resolve to (`OPENWRT_COMMIT`), `SEED_FILE`, `DEVICE_NAME`. Both builds refuse
+  a source tree whose commit differs from the pin.
+- **`renovate.json`** — a self-hosted Renovate on Gitea bumps the pin from
+  OpenWrt's release tags. A patch release in the pinned series becomes a PR; a
+  **series jump** waits for approval on the dependency dashboard, because a
+  new series can need DTS or seed changes. Action SHAs, the base-image digest
+  and actionlint are collected into one monthly "build tooling" PR.
+- **`.github/workflows/build.yml`** — a `renovate/**` branch push runs a
+  **canary build**; a `v*` **tag** push builds and publishes the **Release**
+  (factory + sysupgrade + manifest + SHA256SUMS, never the FULLFLASH). Only
+  the release job gets write access. Plain `master` pushes do not build.
+- **`.github/workflows/check.yml`** — runs `scripts/check.sh` on every push,
+  on Gitea Actions as well.
+- **`scripts/tag-release.sh`** — creates the release tag on Gitea. Tags must
+  originate there: the push mirror prunes refs that exist only on GitHub.
 
-### Releasing a new OpenWrt version — the whole recipe
+### Releasing a new OpenWrt version
 
-Everything up to the merge happens on its own; the parts that need you are
-**two steps**, and the router is never touched automatically.
+Two steps need you; the router is never touched automatically.
 
-1. **A bump PR appears on Gitea** (Renovate, daily) changing `OPENWRT_TAG` in
-   `ci/*.env`. Its `renovate/**` branch reaches GitHub through the mirror and
-   starts a **canary build** — this only proves the new version still
-   compiles with our DTS/seed; it publishes nothing.
-2. **Canary green → merge the PR on Gitea.** ← *step 1 of yours*
-3. **Tag it:** ← *step 2 of yours*
-   ```bash
-   ./scripts/tag-release.sh      # syncs with origin itself, no git pull needed
-   ```
-   It reads the merged pin, tags that commit `<OPENWRT_TAG>-<DEVICE_NAME>` and
-   pushes to Gitea; the mirror forwards the tag, and GitHub's tag build
-   publishes the **Release**. A tag build aborts immediately if the tag and the
-   pin disagree.
-4. **Flash** — see [Updating](docs/operations.md#updating) in the operations
-   guide. Optionally cross-check the release against your own build first:
-   ```bash
-   JOBS=4 ./scripts/build.sh                      # same pin as CI
-   scripts/repro-compare.sh release-sysupgrade.bin firmware/built/16m-<ver>/*sysupgrade.bin
-   ```
+1. **A bump PR appears on Gitea.** Its `renovate/**` branch reaches GitHub
+   through the mirror and runs the canary build, which proves the new version
+   still builds with this DTS and seed; it publishes nothing.
+2. **Canary green → merge the PR on Gitea.** ← *you*
+3. **Tag it** ← *you*: run `./scripts/tag-release.sh` on master; it syncs with
+   origin itself. The mirror forwards the tag and GitHub publishes the
+   **Release**.
+4. **Flash** — see [Updating](docs/operations.md#updating). Optionally
+   cross-check the Release against your own build first
+   ([Reproducibility](#reproducibility-supply-chain-cross-check)).
 
-Treat the first flash of a new series (after approving its bump on the
-dependency dashboard) as a risk moment — keep the FULLFLASH image and the
-CH341A at hand.
+Treat the first flash of a new series as a risk moment: keep the FULLFLASH
+image and the programmer at hand.
 
 ### Forking this repo for your own device
 
 One-time setup after forking:
 
-1. Decide where the bump PRs come from. This repo drives them from a
-   self-hosted **Renovate on Gitea** (see `renovate.json`) and mirrors to
-   GitHub. A GitHub-only fork works too: run Renovate (or the hosted
-   Mend app) against the fork, or bump `ci/*.env` by hand — the build only
-   needs a `renovate/**` branch push (canary) or a `v*` tag push (release),
-   whatever creates them.
-2. Run one local build — it generates the apk signing keypair
-   (`private-key.pem` / `public-key.pem`) in the build-tree root — then add
-   their contents as the **`APK_PRIVATE_KEY`** and **`APK_PUBLIC_KEY`** Actions
-   secrets. Without them every CI run signs with a throwaway key and the
-   images can never match your local ones bit-for-bit.
-3. Replace the backup-dependent bits with your own device's dumps (keep them
-   out of git!) and, for a different router model, your own DTS + seed +
-   `ci/*.env`.
-4. `scripts/tag-release.sh` assumes it runs on a **`master`** branch and pushes
-   the tag to **`origin`**. In a GitHub-only fork that is simply your fork, and
-   it works unchanged — the "tags must originate on Gitea" rule above is a
-   consequence of *this* repo's push mirror, not of the tooling. Rename the
-   branch check if your default branch is `main`.
+1. Decide where the bump PRs come from. A GitHub-only fork works too: run
+   Renovate (or the hosted Mend app) against the fork, or bump `ci/*.env` by
+   hand. The build only needs a `renovate/**` branch push (canary) or a `v*`
+   tag push (release).
+2. Run one local build: it generates the apk signing keypair
+   (`private-key.pem`, `public-key.pem`) in the build-tree root. Add their
+   contents as the **`APK_PRIVATE_KEY`** and **`APK_PUBLIC_KEY`** Actions
+   secrets.
+3. Your own unit's flash dumps go under `firmware/router-backup/`, never into
+   git. A different router model needs its own DTS, seed and `ci/*.env`.
+4. `scripts/tag-release.sh` tags `master` and pushes to `origin`; in a
+   GitHub-only fork that is the fork itself. Adjust its branch check if your
+   default branch is `main`.
 
 > **Note on the build container.** `Containerfile` stays on Debian
 > **bookworm** deliberately: a base image swap changes the toolchain and
@@ -187,24 +155,24 @@ One-time setup after forking:
 ### Reproducibility (supply-chain cross-check)
 
 A local build and the CI build of the same tag are **byte-identical** — the
-kernel and every rootfs file — except for a known-benign residue in the apk
-database (the exact whitelist is in
+kernel and every rootfs file — except for a known residue in the apk database
+(the exact list is in
 [scripts/_inner-repro-compare.sh](scripts/_inner-repro-compare.sh)). Two
-determinism fixes make this possible:
+settings make this possible:
 
-- `CONFIG_KERNEL_BUILD_USER/DOMAIN` pinned in the seed (otherwise the kernel
-  banner embeds the random container hostname);
-- CI signs with the **project apk keypair** from the Actions secrets instead
-  of a per-run throwaway key.
+- the seed fixes the build user and host in the kernel banner
+  (`CONFIG_KERNEL_BUILD_USER/DOMAIN`);
+- CI signs packages with the **project apk keypair** from the Actions secrets;
+  without them every run signs with a throwaway key.
 
-Check any two same-tag images (e.g. your local build vs the Release asset):
+Compare any two same-tag images, e.g. your local build and the Release asset:
 
 ```bash
 scripts/repro-compare.sh local-sysupgrade.bin release-sysupgrade.bin
 ```
 
-It PASSes only if the images match modulo the exact whitelisted residue — any
-other difference is a supply-chain red flag.
+Any difference beyond that residue fails the check and is a supply-chain red
+flag.
 
 ## Repo layout
 
@@ -213,28 +181,22 @@ other difference is a supply-chain red flag.
 | [scripts/build.sh](scripts/build.sh) | **entry point** — pin-driven build, bootstraps everything, assembles the FULLFLASH |
 | [scripts/_inner-build.sh](scripts/_inner-build.sh) | in-container build: DTS/profile injection + seed + make |
 | [scripts/repro-compare.sh](scripts/repro-compare.sh) | reproducibility check of two same-tag images |
-| [scripts/router-backup.sh](scripts/router-backup.sh) | mtd partition backup over SSH, 3× verified |
-| [config/wr941nd-v4-25.12-16m.seed.config](config/wr941nd-v4-25.12-16m.seed.config) | current seed (LuCI, HTTPS, ed25519, deterministic banner) |
+| [scripts/router-backup.sh](scripts/router-backup.sh) | mtd partition backup over SSH, cross-checked over several passes |
+| [config/wr941nd-v4-25.12-16m.seed.config](config/wr941nd-v4-25.12-16m.seed.config) | seed config: packages and build options |
 | [config/ath79-16m/](config/ath79-16m/) | custom 16M DTS + device definition (injected at build time) |
-| [ci/wr941nd-v4-16m.env](ci/wr941nd-v4-16m.env) | device pin: OpenWrt tag + seed (single source of truth) |
+| [ci/wr941nd-v4-16m.env](ci/wr941nd-v4-16m.env) | device pin: OpenWrt tag and commit, seed, release name |
 | [renovate.json](renovate.json) | Renovate: OpenWrt tag bumps, action SHA pins, base-image digests |
 | [scripts/tag-release.sh](scripts/tag-release.sh) | tag the merged bump on Gitea → GitHub builds the Release |
-| [scripts/check.sh](scripts/check.sh) | pre-push gate: secret scan + shellcheck + yamllint + actionlint (also run by CI) |
-| [Containerfile](Containerfile) | Debian bookworm build container (24.10/25.12) |
+| [scripts/check.sh](scripts/check.sh) | pre-push gate: secret scan and linters (CI runs it too) |
+| [Containerfile](Containerfile) | Debian bookworm build container |
 | [docs/hardware-mod.md](docs/hardware-mod.md) | the flash + RAM upgrade guide |
-| [docs/operations.md](docs/operations.md) | running the AP: setup, updates, harmless messages, pitfalls |
+| [docs/operations.md](docs/operations.md) | running the AP: setup, updates, harmless messages, pitfalls (including serial-console reboots) |
 | [SECURITY.md](SECURITY.md) | how releases can be verified, and how to report a vulnerability |
 | [AGENTS.md](AGENTS.md) | notes for coding agents: ground rules, forge topology, gotchas |
 | `firmware/` | flash backups and built images; the directory is in git, its contents never are |
 | `work/` | scratch files (downloads, comparison inputs, logs); contents not in git |
 | `.githooks/` | `pre-push` runs `scripts/check.sh` (enable with `git config core.hooksPath .githooks`) |
 | `.editorconfig`, `.vscode/`, [openwrt-wr941nd.code-workspace](openwrt-wr941nd.code-workspace) | editor settings: whitespace rules in `.editorconfig`, VS Code extras in the other two |
-
-## Operations / troubleshooting (deployed AP)
-
-Dumb-AP setup, updating, harmless log messages and known pitfalls — including
-the **spontaneous reboots a connected serial header can cause** — are in
-[docs/operations.md](docs/operations.md).
 
 ## History: the original 18.06 flow
 

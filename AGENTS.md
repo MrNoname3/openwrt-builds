@@ -24,27 +24,23 @@ What the project is and how to build and release it is in the
   images brick it.
 - **Do not change the deployed AP** (config, reboot, sysupgrade) without the
   owner's explicit go-ahead. Reading its state is fine.
-- Commit subjects use an area prefix — `docs:`, `ci:`, `seed:`, `build:`,
-  `scripts:`, `renovate:`, `editor:`, `repo:`, `style:` — one concern per
-  commit.
+- Commit subjects use an area prefix — `docs:`, `ci:`, `seed:`, `config:`,
+  `build:`, `scripts:`, `renovate:`, `editor:`, `repo:`, `style:` — one
+  concern per commit.
 - **Run `./scripts/check.sh` before every push** (a push is a publication,
   through the mirror); `git config core.hooksPath .githooks` makes git run it
-  as a pre-push hook. It scans the tracked files for private data and runs
-  shellcheck, yamllint and actionlint where they are installed; `.github/workflows/check.yml`
-  runs the same script on GitHub. The private scan patterns live in the
-  gitignored `.secret-patterns.local`; on a machine without that file only the
-  generic patterns run, so ask the owner for it rather than skipping the scan.
+  as a pre-push hook. Its private scan patterns live in the gitignored
+  `.secret-patterns.local`; on a machine without that file only the generic
+  patterns run, so ask the owner for it rather than skipping the scan.
 
 ## Where things live
 
 | Location | In git | What it holds |
 |----------|:------:|---------------|
-| this clone | yes | sources, seeds, DTS, scripts, CI, docs |
-| `~/.local/share/openwrt-wr941nd/openwrt-<series>/` | no | OpenWrt build tree, one per release series (~12 GB), created by `scripts/build.sh`; reused incrementally |
+| `~/.local/share/openwrt-wr941nd/openwrt-<series>/` | no | OpenWrt build tree, one per release series, created by `scripts/build.sh`; reused incrementally |
 | `<build tree>/private-key.pem`, `public-key.pem` | no | the project's apk signing keypair; CI holds the same pair as Actions secrets |
 | `firmware/router-backup/<ts>/` | no | mtd dumps of the original flash — `u-boot` and `art` are irreplaceable |
 | `firmware/built/16m-<version>/` | no | build output; the FULLFLASH image only when a backup is present |
-| `work/` | no (directory only) | scratch files: downloads, comparison inputs, captured logs |
 | podman image `openwrt-builder` | no | build container from `Containerfile`, rebuilt automatically when that file changes |
 
 On a fresh machine `firmware/` is empty and there is no build tree: the build

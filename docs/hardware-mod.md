@@ -2,8 +2,7 @@
 
 This is the full guide for upgrading a TP-Link TL-WR941ND **v4** (Atheros
 AR7240 @ 400 MHz, ath9k `pci168c:002a` radio) so it can run **current
-OpenWrt**. Stock hardware — 4 MB SPI flash, 32 MB RAM — stopped being usable
-after OpenWrt 18.06/19.07.
+OpenWrt**.
 
 Both mods are **required** for the images this repo builds:
 
@@ -38,8 +37,8 @@ Do it **before touching anything**, ideally both ways:
 ./scripts/router-backup.sh          # host alias + destination are parameters
 ```
 
-It reads every `mtd` partition 3× and cross-checks sha256 (`RUNS=5` for more
-passes). Output lands in `firmware/router-backup/<timestamp>/`, one file per
+It reads every `mtd` partition several times (`RUNS`) and cross-checks the
+sha256 sums. Output lands in `firmware/router-backup/<timestamp>/`, one file per
 partition — the two that matter later:
 
 ```
@@ -119,10 +118,8 @@ Then solder the chip in (SOIC-8; hot air or drag soldering).
 The AR7240 supports 64 MB as a single ×16 DDR1 chip; u-boot on this unit
 detected the new size with **no firmware/u-boot change** ("DRAM: 64 MB").
 
-Lesson from this unit: after the swap the boot **hung right after the
-`DRAM: 64 MB` line** with corrupted serial output — a bad joint on an address
-line. Rework every pin if boot stalls there; after re-soldering it booted
-cleanly.
+A boot that **hangs right after the `DRAM: 64 MB` line** with garbled serial
+output points to a bad joint on an address line: rework every pin.
 
 ## Step 6 — first boot & checks
 
@@ -137,10 +134,9 @@ RX, board RX → adapter TX and a common GND, and power the router from its own
 supply — never connect the adapter's VCC to the board.
 
 Expected: u-boot banner → `DRAM: 64 MB` → kernel boot → OpenWrt on
-`192.168.1.1` (fresh config). u-boot prints `Flash: 04 MB` because its chip
-table does not know the new part; that is harmless, since it only reads the
-kernel from the first 4 MB. The very first boot takes about 1.5 minutes while
-the overlay is created. Verify:
+`192.168.1.1` (fresh config). u-boot's `Flash: 04 MB` is one of the
+[harmless messages](operations.md#messages-that-are-harmless). The very first
+boot takes about 1.5 minutes while the overlay is created. Verify:
 
 ```
 free            # ~59 MB total
@@ -152,11 +148,6 @@ Then configure, or restore a config backup.
 
 ## Updating later
 
-After the initial swap you never need the programmer again: every new release
-from this repo is flashed with the **sysupgrade** image (settings kept). The
-FULLFLASH path exists only for the initial swap and for disaster recovery.
-
-> ⚠️ The board still reports the stock compat string, which cuts both ways:
-> official images and attended sysupgrade would brick the modded unit, and
-> these images would brick a stock one. The README's warning at the top
-> explains both.
+Every later release is a sysupgrade with settings kept — see
+[Updating](operations.md#updating). The FULLFLASH image is only for disaster
+recovery, and official OpenWrt images brick this board ([why](../README.md)).
