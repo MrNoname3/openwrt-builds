@@ -66,10 +66,9 @@ pass data on stdin or through `work/`.
 
 ## Forge topology
 
-The README's CI section describes the setup: Gitea as the source of truth,
-push-mirrored to GitHub (`MrNoname3/openwrt-builds`), which builds and
-publishes. Here, `origin` is the Gitea with default branch `master`; there is
-no `github` remote, so reach GitHub through its API or web UI.
+The setup is in the README's CI section. Here, `origin` is the Gitea with
+default branch `master`; there is no `github` remote, so reach the mirror
+(`MrNoname3/openwrt-builds`) through its API or web UI.
 
 ### Handling a Renovate PR
 

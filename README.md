@@ -91,8 +91,7 @@ u-boot/art dumps are device-unique and not in git — see the
 The **source of truth is a self-hosted Gitea instance**, push-mirrored to
 GitHub, where Actions builds and releases. An OpenWrt build is too heavy for
 the Gitea box, and an *independent* build infrastructure is what makes the
-reproducibility cross-check meaningful. The CI runs the **same build** as
-`build.sh`: same container, same `_inner-build.sh`, same pin file. Pieces:
+reproducibility cross-check meaningful. Pieces:
 
 - **`ci/wr941nd-v4-16m.env`** — the pin: `OPENWRT_TAG` with the commit it must
   resolve to (`OPENWRT_COMMIT`), `SEED_FILE`, `DEVICE_NAME`. Both builds refuse
@@ -100,8 +99,10 @@ reproducibility cross-check meaningful. The CI runs the **same build** as
 - **`renovate.json`** — a self-hosted Renovate on Gitea bumps the pin from
   OpenWrt's release tags. A patch release in the pinned series becomes a PR; a
   **series jump** waits for approval on the dependency dashboard, because a
-  new series can need DTS or seed changes. Action SHAs, the base-image digest
-  and actionlint are collected into one monthly "build tooling" PR.
+  new series can need DTS or seed changes. Everything else (Action SHAs, the
+  base-image digest, actionlint) is collected into one monthly "build tooling"
+  PR. Moving the build container to a new Debian release is never automatic:
+  it changes the toolchain and invalidates the reproducibility baseline.
 - **`.github/workflows/build.yml`** — a `renovate/**` branch push runs a
   **canary build**; a `v*` **tag** push builds and publishes the **Release**
   (factory + sysupgrade + manifest + SHA256SUMS, never the FULLFLASH). Only
@@ -124,10 +125,9 @@ Two steps need you; the router is never touched automatically.
    **Release**.
 4. **Flash** — see [Updating](docs/operations.md#updating). Optionally
    cross-check the Release against your own build first
-   ([Reproducibility](#reproducibility-supply-chain-cross-check)).
-
-Treat the first flash of a new series as a risk moment: keep the FULLFLASH
-image and the programmer at hand.
+   ([Reproducibility](#reproducibility-supply-chain-cross-check)). For the
+   first flash of a new series, keep the FULLFLASH image and the programmer at
+   hand.
 
 ### Forking this repo for your own device
 
@@ -146,11 +146,6 @@ One-time setup after forking:
 4. `scripts/tag-release.sh` tags `master` and pushes to `origin`; in a
    GitHub-only fork that is the fork itself. Adjust its branch check if your
    default branch is `main`.
-
-> **Note on the build container.** `Containerfile` stays on Debian
-> **bookworm** deliberately: a base image swap changes the toolchain and
-> invalidates the reproducibility baseline, so it is an approval-only decision
-> rather than an automatic bump.
 
 ### Reproducibility (supply-chain cross-check)
 
@@ -185,10 +180,10 @@ flag.
 | [config/wr941nd-v4-25.12-16m.seed.config](config/wr941nd-v4-25.12-16m.seed.config) | seed config: packages and build options |
 | [config/ath79-16m/](config/ath79-16m/) | custom 16M DTS + device definition (injected at build time) |
 | [ci/wr941nd-v4-16m.env](ci/wr941nd-v4-16m.env) | device pin: OpenWrt tag and commit, seed, release name |
-| [renovate.json](renovate.json) | Renovate: OpenWrt tag bumps, action SHA pins, base-image digests |
+| [renovate.json](renovate.json) | Renovate rules that keep every pin current |
 | [scripts/tag-release.sh](scripts/tag-release.sh) | tag the merged bump on Gitea → GitHub builds the Release |
 | [scripts/check.sh](scripts/check.sh) | pre-push gate: secret scan and linters (CI runs it too) |
-| [Containerfile](Containerfile) | Debian bookworm build container |
+| [Containerfile](Containerfile) | build container on a digest-pinned Debian base |
 | [docs/hardware-mod.md](docs/hardware-mod.md) | the flash + RAM upgrade guide |
 | [docs/operations.md](docs/operations.md) | running the AP: setup, updates, harmless messages, pitfalls (including serial-console reboots) |
 | [SECURITY.md](SECURITY.md) | how releases can be verified, and how to report a vulnerability |
