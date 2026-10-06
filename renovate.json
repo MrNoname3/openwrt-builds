@@ -39,14 +39,8 @@
       "dependencyDashboardApproval": true
     },
     {
-      "description": "Build tooling is never urgent: one grouped PR on the 1st of each month",
-      "matchManagers": ["dockerfile", "github-actions"],
-      "groupName": "build tooling",
-      "schedule": ["* * 1 * *"]
-    },
-    {
-      "description": "Workflow-downloaded tools join the same monthly PR",
-      "matchDepNames": ["rhysd/actionlint"],
+      "description": "Everything but OpenWrt itself is build tooling, never urgent: one grouped PR on the 1st of each month",
+      "matchDepNames": ["!openwrt/openwrt"],
       "groupName": "build tooling",
       "schedule": ["* * 1 * *"]
     }
