@@ -1,40 +1,29 @@
 name: check
 
-# Runs scripts/check.sh, the same gate as a local run, on every push. Written to
-# run on both GitHub Actions and Gitea Actions (Gitea also scans
-# .github/workflows): no actions/cache, no GitHub-only guard, and sudo only when
-# the job is not already root. Without the gitignored .secret-patterns.local,
-# the secret scan here uses the generic patterns alone.
+# Runs scripts/check.sh on every push. Portable to Gitea Actions, which also
+# reads .github/workflows: no actions/cache, and sudo only when not root.
 on:
   push:
     branches: ['**']
   workflow_dispatch:
 
-# Least privilege: this job only reads the repository. Without this block the
-# GITHUB_TOKEN inherits the repository default, which may be read-write.
 permissions:
   contents: read
 
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10   # a hung step (e.g. a stalled apt download) fails fast instead of idling
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install linters
-        # Portable whether the runner runs as root (Gitea/act) or as a
-        # sudo-capable user (GitHub-hosted).
+        # actionlint is a pinned release, checked against its sha256; Renovate
+        # updates the version and sum on each line together.
         run: |
           if [ "$(id -u)" -ne 0 ]; then SUDO=sudo; else SUDO=""; fi
           $SUDO apt-get update -qq
           $SUDO apt-get install -y --no-install-recommends shellcheck yamllint
-
-      - name: Install actionlint
-        # A pinned release, checked against its published sha256 before use.
-        # Renovate updates each line's version and sum together (custom
-        # manager in renovate.json), so every architecture keeps its own pair.
-        run: |
           case "$(uname -m)" in
             # renovate: datasource=github-release-attachments depName=rhysd/actionlint
             x86_64) arch=amd64 version=v1.7.12 sum=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8 ;;
@@ -46,9 +35,8 @@ jobs:
           curl -fsSLO "https://github.com/rhysd/actionlint/releases/download/${version}/$f"
           echo "$sum  $f" | sha256sum -c -
           tar xzf "$f" actionlint
-          if [ "$(id -u)" -ne 0 ]; then SUDO=sudo; else SUDO=""; fi
           $SUDO install -m 0755 actionlint /usr/local/bin/actionlint
           rm -f "$f" actionlint
 
-      - name: Run the release gate (same script as local runs)
+      - name: Run the release gate
         run: ./scripts/check.sh

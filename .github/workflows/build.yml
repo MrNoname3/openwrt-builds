@@ -40,9 +40,7 @@ jobs:
           cat pin.env >> "$GITHUB_OUTPUT"
 
       - name: Verify a release tag matches the pinned version
-        # Fail fast (before the 2h build) if a v* tag does not correspond to
-        # the OPENWRT_TAG pinned in ci/*.env at that commit -- e.g. a tag
-        # created on the wrong commit, or a typo.
+        # Fail before the build if the tag is not this commit's pinned release.
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           expected="${OPENWRT_TAG}-${DEVICE_NAME}"
@@ -52,8 +50,8 @@ jobs:
           fi
 
       - name: Free up runner disk space
-        # The OpenWrt buildroot needs ~20GB; drop the biggest preinstalled
-        # toolchains we don't use.
+        # The buildroot needs more disk than the runner leaves free; drop
+        # large preinstalled toolchains it does not use.
         run: |
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
                       /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
@@ -64,12 +62,8 @@ jobs:
         run: docker build -t openwrt-builder -f Containerfile .
 
       - name: Clone OpenWrt at the pinned tag
-        # github.com mirror of git.openwrt.org -- identical tags, much faster
-        # from an Actions runner.
-        # Blobless clone, NOT shallow: scripts/getver.sh counts commits to derive
-        # the revision (rXXXXX); with --depth 1 it falls back to r1 and taints
-        # base-files' version + /etc/openwrt_release.
-        # The checked-out commit must be the one pinned next to the tag.
+        # Blobless, not shallow: scripts/getver.sh counts commits to derive the
+        # revision that ends up in the image. The commit must match the pin.
         run: |
           git clone --filter=blob:none --branch "$OPENWRT_TAG" \
             https://github.com/openwrt/openwrt.git "$HOME/openwrt"
@@ -80,10 +74,9 @@ jobs:
           fi
 
       - name: Install the project apk signing keypair
-        # The project keypair, as in the local tree's root: without it the tree
-        # generates its own key and no package signature matches a local build.
-        # The secrets context is not allowed in a step-level `if`, hence the
-        # emptiness check in the shell.
+        # Without the project keypair the tree generates its own key, and no
+        # package signature matches a local build. Secrets cannot be tested in
+        # a step-level `if`, hence the shell check.
         env:
           APK_PRIVATE_KEY: ${{ secrets.APK_PRIVATE_KEY }}
           APK_PUBLIC_KEY: ${{ secrets.APK_PUBLIC_KEY }}
@@ -136,9 +129,8 @@ jobs:
           path: out/
 
   release:
-    # Tag-driven: only a v* tag ref publishes (tag push from the mirror, or a
-    # manual dispatch on the tag for a deliberate re-release). Branch builds --
-    # canary or dispatch -- stop after the build job.
+    # Only a v* tag ref publishes: a tag push, or a dispatch on the tag to
+    # re-release.
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
