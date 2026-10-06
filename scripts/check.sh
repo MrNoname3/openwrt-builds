@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # Release gate, run before every push (by .githooks/pre-push once enabled) and
-# by .github/workflows/check.yml. The secret scan of the tracked files needs
-# only git; its private patterns come from the gitignored .secret-patterns.local
-# (one extended regex per line). The linters run where they are installed, and
-# a run without them names the ones it skipped.
+# by .github/workflows/check.yml. A linter that is not installed is skipped and
+# named at the end.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -12,9 +10,9 @@ fail=0
 skipped=()
 
 step "secret scan (tracked files)"
-# The repo is public. These patterns are deliberately generic; private ones
-# (the forge's hostname, the home network's addresses, ...) belong in the
-# untracked .secret-patterns.local, never here.
+# The repo is public. These patterns are generic; private ones (the forge's
+# hostname, the home network's addresses) go in the gitignored
+# .secret-patterns.local, one extended regex per line.
 scan() { # scan <label> <pattern-ERE> [allowlist-ERE]
     local label="$1" pattern="$2" allow="${3:-}" hits rc=0
     # git grep exits 1 for "no match"; anything above that is a broken scan,
@@ -53,33 +51,19 @@ else
 fi
 [ "$fail" -eq 0 ] && echo "OK"
 
-step "shellcheck"
-if command -v shellcheck >/dev/null; then
-    shellcheck scripts/*.sh .githooks/* || fail=1
-else
-    skipped+=(shellcheck)
-fi
+lint() { # lint <tool> <command...>
+    if command -v "$1" >/dev/null; then
+        shift
+        "$@" || fail=1
+    else
+        skipped+=("$1")
+    fi
+}
 
-step "yamllint"
-if command -v yamllint >/dev/null; then
-    yamllint .github/workflows/ || fail=1
-else
-    skipped+=(yamllint)
-fi
-
-step "actionlint"
-if command -v actionlint >/dev/null; then
-    actionlint || fail=1
-else
-    skipped+=(actionlint)
-fi
-
-step "JSON syntax"
-if command -v python3 >/dev/null; then
-    python3 -m json.tool renovate.json >/dev/null && echo "OK" || fail=1
-else
-    skipped+=("JSON syntax")
-fi
+step "shellcheck";  lint shellcheck shellcheck scripts/*.sh .githooks/*
+step "yamllint";    lint yamllint yamllint .github/workflows/
+step "actionlint";  lint actionlint actionlint
+step "JSON syntax"; lint python3 python3 -m json.tool renovate.json >/dev/null
 
 echo
 if [ ${#skipped[@]} -gt 0 ]; then
