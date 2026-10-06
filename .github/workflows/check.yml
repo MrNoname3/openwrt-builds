@@ -32,18 +32,18 @@ jobs:
 
       - name: Install actionlint
         # A pinned release, checked against its published sha256 before use.
-        # Renovate cannot update the checksums, so bump all three together by
-        # hand from the release's checksums file.
-        env:
-          ACTIONLINT_VERSION: 1.7.12
+        # Renovate updates each line's version and sum together (custom
+        # manager in renovate.json), so every architecture keeps its own pair.
         run: |
           case "$(uname -m)" in
-            x86_64) arch=amd64 sum=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8 ;;
-            aarch64) arch=arm64 sum=325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6 ;;
+            # renovate: datasource=github-release-attachments depName=rhysd/actionlint
+            x86_64) arch=amd64 version=v1.7.12 sum=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8 ;;
+            # renovate: datasource=github-release-attachments depName=rhysd/actionlint
+            aarch64) arch=arm64 version=v1.7.12 sum=325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6 ;;
             *) echo "::error::no actionlint pinned for $(uname -m)"; exit 1 ;;
           esac
-          f="actionlint_${ACTIONLINT_VERSION}_linux_${arch}.tar.gz"
-          curl -fsSLO "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$f"
+          f="actionlint_${version#v}_linux_${arch}.tar.gz"
+          curl -fsSLO "https://github.com/rhysd/actionlint/releases/download/${version}/$f"
           echo "$sum  $f" | sha256sum -c -
           tar xzf "$f" actionlint
           if [ "$(id -u)" -ne 0 ]; then SUDO=sudo; else SUDO=""; fi

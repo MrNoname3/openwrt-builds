@@ -11,6 +11,13 @@
       "depNameTemplate": "openwrt/openwrt",
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "semver-coerced"
+    },
+    {
+      "customType": "regex",
+      "description": "Tools downloaded by the workflows: a '# renovate: datasource=... depName=...' comment above a line holding version=<tag> sum=<sha256>. With github-release-attachments the sum is the release asset's sha256, which Renovate maps to the new release through its checksums file.",
+      "managerFilePatterns": ["/^\\.github/workflows/.+\\.ya?ml$/"],
+      "matchStrings": ["# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n[^\\n]*version=(?<currentValue>\\S+) sum=(?<currentDigest>[0-9a-f]{64})"],
+      "versioningTemplate": "semver-coerced"
     }
   ],
   "packageRules": [
@@ -34,6 +41,12 @@
     {
       "description": "Build tooling (base-image digests, GitHub Actions) is never urgent: collect it into one PR on the 1st of each month (UTC) instead of one PR per update. OpenWrt bumps are not affected.",
       "matchManagers": ["dockerfile", "github-actions"],
+      "groupName": "build tooling",
+      "schedule": ["* * 1 * *"]
+    },
+    {
+      "description": "Workflow-downloaded tools (actionlint) join the same monthly build-tooling PR.",
+      "matchDepNames": ["rhysd/actionlint"],
       "groupName": "build tooling",
       "schedule": ["* * 1 * *"]
     }
