@@ -46,6 +46,10 @@ fi
 echo "[✓] Device selected: tplink_tl-wr941-v4-16m"
 
 # 4. Build --------------------------------------------------------------------
+# make never deletes images from earlier builds, and the filenames carry the
+# version, so drop this device's old images: bin/ then holds only this build's.
+OUT=bin/targets/ath79/tiny
+rm -f "$OUT"/*tl-wr941-v4-16m*
 echo "[*] make download ..."; make "-j$JOBS" download
 echo "[*] Building (first build is slow) ..."
 if ! make "-j$JOBS"; then
@@ -53,6 +57,5 @@ if ! make "-j$JOBS"; then
     exit 1
 fi
 
-OUT=bin/targets/ath79/tiny
 echo; echo "[✓] Build complete. Artifacts:"
 ls -lh "$OUT"/*tl-wr941-v4-16m* 2>/dev/null || ls -lh "$OUT"

@@ -43,37 +43,23 @@ podman_run run --rm \
     "$IMAGE" \
     bash /opt/scripts/_inner-build-16m.sh
 
-# 3. Locate the built firmware images -----------------------------------------
-# The build tree is persistent and `make` does not remove images from earlier
-# builds, so a glob can match several files -- e.g. after the switch to
-# version-numbered filenames, when the old openwrt-ath79-tiny-*.bin is still
-# lying around. Picking one of those silently would be the worst outcome here:
-# a stale image can end up inside the FULLFLASH that gets written to the chip.
-# So: refuse to guess, and say exactly what to delete.
-PICKED=""
-pick_one() { # pick_one <description> <matches...>
-    local what="$1"; shift
-    PICKED=""
-    [ $# -eq 0 ] && return 0
-    if [ $# -gt 1 ]; then
-        echo "[!] Several $what images in the build tree -- refusing to guess:" >&2
-        printf '      %s\n' "$@" >&2
-        echo "    Delete the stale ones from $SRC24/$OUT_SUB and re-run." >&2
-        exit 1
-    fi
-    PICKED="$1"
-}
-
+# 3. Collect the built firmware images ------------------------------------------
+# The inner build clears this device's old images first, so exactly one of each
+# must exist; anything else means the build did not produce what it should.
 shopt -s nullglob
-pick_one factory    "$SRC24/$OUT_SUB"/*tl-wr941-v4-16m*factory.bin;    factory="$PICKED"
-pick_one sysupgrade "$SRC24/$OUT_SUB"/*tl-wr941-v4-16m*sysupgrade.bin; sysupgrade="$PICKED"
+factories=("$SRC24/$OUT_SUB"/*tl-wr941-v4-16m*factory.bin)
+sysupgrades=("$SRC24/$OUT_SUB"/*tl-wr941-v4-16m*sysupgrade.bin)
 shopt -u nullglob
+if [ ${#factories[@]} -ne 1 ] || [ ${#sysupgrades[@]} -ne 1 ]; then
+    echo "[!] Expected one factory and one sysupgrade image in $SRC24/$OUT_SUB, found:" >&2
+    printf '      %s\n' "${factories[@]}" "${sysupgrades[@]}" >&2
+    exit 1
+fi
+factory="${factories[0]}"; sysupgrade="${sysupgrades[0]}"
 
-[ -z "$factory" ] && [ -z "$sysupgrade" ] && { echo "[!] No tl-wr941-v4-16m factory/sysupgrade image found." >&2; exit 1; }
 dest="$PROJECT_DIR/firmware/built/$BUILD_TAG"
 mkdir -p "$dest"
 for img in "$factory" "$sysupgrade"; do
-    [ -n "$img" ] || continue
     echo "[i] Firmware image: $(basename "$img") ($(stat -c%s "$img") bytes)"
     cp -f "$img" "$dest/"
 done
