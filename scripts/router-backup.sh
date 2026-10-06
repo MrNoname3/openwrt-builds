@@ -124,5 +124,5 @@ echo
 echo "[✓] Backup at: $dest"
 ls -lh "$dest"
 echo
-echo "IMPORTANT: the ART/calibration partition is device-unique (WiFi radio cal)."
-echo "Keep this backup safe — it is needed for the 16MB flash transplant."
+echo "IMPORTANT: u-boot (the MAC) and art (the WiFi calibration) are device-unique."
+echo "Keep this backup safe — the 16MB flash transplant needs both."
