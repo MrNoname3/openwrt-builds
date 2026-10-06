@@ -122,7 +122,7 @@ done
 backups=("$PROJECT_DIR"/firmware/router-backup/*/)
 bkdir=""; arts=()
 if [ ${#backups[@]} -gt 0 ]; then
-    bkdir="${backups[${#backups[@]}-1]%/}"
+    bkdir="${backups[-1]%/}"
     arts=("$bkdir"/mtd*art*.bin)
 fi
 if [ -n "$bkdir" ] && [ -f "$bkdir/mtd0_u-boot.bin" ] && [ ${#arts[@]} -gt 0 ]; then
