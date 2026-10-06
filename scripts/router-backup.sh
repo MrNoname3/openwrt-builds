@@ -1,20 +1,14 @@
 #!/usr/bin/env bash
-# Back up the running router's flash (mtd partitions) over SSH -- no chip readout
-# needed. Reading /dev/mtdN is non-destructive. Captures u-boot, ART/calibration,
-# firmware, config etc. plus the partition map -- exactly what the 16MB flash
-# transplant needs (ART is device-unique!).
+# Back up the running router's flash over SSH: every mtd partition, the
+# partition map, and a full-chip image rebuilt from the partition offsets.
+# Reading /dev/mtdN is non-destructive.
 #
-# Does RUNS (default 3) independent dump passes and cross-checks them by sha256.
-# NOR flash reads are deterministic, so all passes must match; if they do, only
-# ONE canonical set is kept. A concatenated full-flash.bin is also produced.
+# RUNS passes are cross-checked by sha256; NOR reads are deterministic, so they
+# must all match, and then one set is kept.
 #
-# Usage:
-#   scripts/router-backup.sh [HOST_ALIAS] [OUTBASE]
-#     HOST_ALIAS  ssh host/alias or user@ip -- anything ssh(1) accepts, e.g.
-#                 root@192.168.1.1 or a ~/.ssh/config alias
-#                 (default: tplink-router)
-#     OUTBASE     output base dir      (default: <project>/firmware/router-backup)
-#   RUNS=3 scripts/router-backup.sh           # number of cross-check passes
+# Usage: [RUNS=n] scripts/router-backup.sh [HOST] [OUTBASE]
+#   HOST     anything ssh(1) accepts, e.g. root@192.168.1.1 (default: tplink-router)
+#   OUTBASE  output base dir (default: <project>/firmware/router-backup)
 set -euo pipefail
 
 HOST="${1:-tplink-router}"
@@ -22,9 +16,8 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUTBASE="${2:-$PROJECT_DIR/firmware/router-backup}"
 RUNS="${RUNS:-3}"
 
-# Old Dropbear (<=2017.75) only has an ssh-rsa/SHA-1 host key; on modern OpenSSL
-# (e.g. Fedora) that needs SHA-1 signatures re-enabled. Use the scoped config if
-# present (harmless on newer firmware that doesn't need it).
+# Dropbear up to 2017.75 offers only an ssh-rsa host key, which needs SHA-1
+# signatures that modern OpenSSL refuses; this scoped config re-enables them.
 SHA1CONF="$HOME/.ssh/openssl-allow-sha1.cnf"
 [ -f "$SHA1CONF" ] && export OPENSSL_CONF="$SHA1CONF"
 

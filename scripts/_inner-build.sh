@@ -9,7 +9,6 @@
 #   /opt/scripts -> project scripts/ (read-only)
 set -euo pipefail
 
-# SEED_FILE comes from the pin file (ci/*.env) via build.sh or the CI workflow.
 SEED="/opt/config/${SEED_FILE:?SEED_FILE must name a seed under config/}"
 DTS_SRC="/opt/config/ath79-16m/ar7240_tplink_tl-wr941-v4-16m.dts"
 DEV_SRC="/opt/config/ath79-16m/tplink_tl-wr941-v4-16m.device.mk"

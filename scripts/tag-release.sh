@@ -1,14 +1,7 @@
 #!/bin/sh
-# Create and push the release tag for the currently pinned OpenWrt version.
-#
-# Run it on master right after a bump PR is merged -- it syncs with origin
-# itself, so no separate `git pull` is needed. The tag lands on origin (the
-# Gitea source of truth); the push mirror forwards it to GitHub, where the tag
-# push triggers the release build (.github/workflows/build.yml).
-#
-# The pin file is read only AFTER syncing: before the fast-forward the working
-# tree still holds the PRE-merge OPENWRT_TAG, which would produce a tag for the
-# previous version.
+# Tag the pinned OpenWrt version for release and push the tag to origin, from
+# where the mirror forwards it to the GitHub release build. Run on master after
+# a bump PR is merged; it fast-forwards to origin/master itself.
 #
 # Usage: scripts/tag-release.sh [ci/<device>.env]   (default: the only *.env)
 set -eu
@@ -49,7 +42,7 @@ if [ "$HEAD_SHA" != "$ORIGIN_SHA" ]; then
     git merge --ff-only -q origin/master
 fi
 
-# --- read the pin (post-merge content) --------------------------------------
+# --- read the pin only now: before the fast-forward it is the previous one ---
 OPENWRT_TAG=$(sed -n 's/^OPENWRT_TAG=//p' "$ENV_FILE")
 DEVICE_NAME=$(sed -n 's/^DEVICE_NAME=//p' "$ENV_FILE")
 if [ -z "$OPENWRT_TAG" ] || [ -z "$DEVICE_NAME" ]; then

@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
-# Runs INSIDE the build container. Compares two sysupgrade images of the SAME
-# OpenWrt tag for reproducibility, tolerating ONLY the known-benign residue in
-# the apk database: the checksum lines (C:/S:/Z:) of lib/apk/db/installed and
-# the gzip MTIME of lib/apk/db/scripts.tar.gz, which differ between build
-# trees. Everything else -- the whole kernel and every other rootfs file --
-# must be BYTE-IDENTICAL, otherwise the verdict is FAIL (supply-chain red flag).
+# Runs INSIDE the build container, called by repro-compare.sh. Compares two
+# sysupgrade images of the same OpenWrt tag: the kernel and every rootfs file
+# must be byte-identical, apart from the apk database residue accepted below.
 #
-# Usage (see repro-compare.sh wrapper): _inner-repro-compare.sh A.bin B.bin
+# Usage: _inner-repro-compare.sh A.bin B.bin
 set -euo pipefail
 
 A="$1"; B="$2"
@@ -55,12 +52,9 @@ if grep -q '^Only in' "$WORK/diff.txt"; then
     echo "[!] FAIL: file set differs:"; grep '^Only in' "$WORK/diff.txt" | head; exit 1
 fi
 
-ALLOWED='^(lib/apk/db/installed|lib/apk/db/scripts\.tar\.gz)$'
+# Only these two files may differ, and only in the ways checked here.
 fail=0
 while IFS= read -r f; do
-    if ! echo "$f" | grep -qE "$ALLOWED"; then
-        echo "[!] FAIL: unexpected difference in: $f"; fail=1; continue
-    fi
     case "$f" in
         lib/apk/db/installed)
             # Only checksum/size/datahash lines (C:/S:/Z:) may differ.
@@ -73,6 +67,9 @@ while IFS= read -r f; do
             ;;
         lib/apk/db/scripts.tar.gz)
             echo "[ok] $f: differs (gzip MTIME; content cascade of the same residue)"
+            ;;
+        *)
+            echo "[!] FAIL: unexpected difference in: $f"; fail=1
             ;;
     esac
 done < "$WORK/changed.txt"

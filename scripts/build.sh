@@ -122,10 +122,8 @@ for img in "$factory" "$sysupgrade"; do
 done
 
 # --- 6. FULLFLASH (u-boot + firmware + art), only when a router backup exists ----
-# The dumps are device-unique (MAC in u-boot, WiFi calibration in art) and are
-# not in git, so a fresh clone skips this; sysupgrade-based updates need only the
-# images above.
-# The newest backup: its timestamped folder name sorts last.
+# The dumps are device-unique and not in git. The newest backup's timestamped
+# folder sorts last.
 shopt -s nullglob
 backups=("$PROJECT_DIR"/firmware/router-backup/*/)
 bkdir=""; arts=()

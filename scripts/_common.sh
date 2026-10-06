@@ -1,15 +1,10 @@
 #!/usr/bin/env bash
-# Shared helpers for the OpenWRT build scripts.
-#
-# Resolves how to invoke Podman so the scripts work both from a normal host
-# terminal (plain `podman`) and from inside the VS Code Flatpak sandbox, where
-# the host binary is only reachable via `flatpak-spawn --host`.
+# Shared helpers for the build scripts. Podman is called directly, or through
+# `flatpak-spawn --host` from the VS Code Flatpak sandbox.
 set -euo pipefail
 
-# Project root = parent of this scripts/ directory.
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# PODMAN is an array so we can transparently prepend `flatpak-spawn --host`.
 if command -v podman >/dev/null 2>&1; then
     PODMAN=(podman)
 elif command -v flatpak-spawn >/dev/null 2>&1 && \
@@ -24,7 +19,6 @@ fi
 
 podman_run() { "${PODMAN[@]}" "$@"; }
 
-# The build container image.
 IMAGE="openwrt-builder"
 
 # Build IMAGE, or rebuild it when the Containerfile differs from the one it was
