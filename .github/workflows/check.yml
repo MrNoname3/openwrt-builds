@@ -32,7 +32,7 @@ jobs:
             *) echo "::error::no actionlint pinned for $(uname -m)"; exit 1 ;;
           esac
           f="actionlint_${version#v}_linux_${arch}.tar.gz"
-          curl -fsSLO "https://github.com/rhysd/actionlint/releases/download/${version}/$f"
+          curl -fsSLO --retry 3 "https://github.com/rhysd/actionlint/releases/download/${version}/$f"
           echo "$sum  $f" | sha256sum -c -
           tar xzf "$f" actionlint
           $SUDO install -m 0755 actionlint /usr/local/bin/actionlint
