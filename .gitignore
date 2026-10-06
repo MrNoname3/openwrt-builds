@@ -1,9 +1,3 @@
-# The OpenWRT working tree (~9 GB / 300k+ files) lives OUTSIDE this folder, at
-# ~/.local/share/openwrt-wr941nd/src, so the clone stays small. The src/ entry
-# here is kept only as a safety net in case anyone points OPENWRT_SRC back into
-# the project.
-src/
-
 # Firmware binaries (stock dumps + our build outputs) — not version controlled.
 firmware/
 

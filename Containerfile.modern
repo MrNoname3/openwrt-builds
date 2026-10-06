@@ -1,9 +1,9 @@
-# Modern OpenWRT buildroot environment (for 21.02+/24.10, kernel 5.15/6.6).
+# OpenWrt buildroot environment (24.10 and later).
 #
 # Debian bookworm: python3 by default, recent gcc/binutils -- what current
-# OpenWrt expects. (The 18.06 build uses the separate bullseye Containerfile,
-# which pins python2.) Same rootless model: builds as the unprivileged 'builder'
-# user; start with --userns=keep-id so bind-mounted files stay owned correctly.
+# OpenWrt expects. The buildroot refuses to run as root, so builds run as the
+# unprivileged 'builder' user; start with --userns=keep-id so bind-mounted files
+# stay owned correctly.
 
 FROM debian:bookworm@sha256:2c037a04925515fdd6ea85ea14a682d0e79931f5e9f5d07b6dbfc6ba12f9e858
 

@@ -8,14 +8,6 @@ set -euo pipefail
 
 # Project root = parent of this scripts/ directory.
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-IMAGE_NAME="openwrt-builder"
-
-# The OpenWRT working tree is ~9 GB / 300k+ files. It deliberately lives OUTSIDE
-# the project folder, so the repo clone stays small and nothing indexing or
-# syncing it has to walk every intermediate build file. Only the tracked files
-# and the final binaries (firmware/) live in the project folder.
-# Override the location with OPENWRT_SRC if you want it elsewhere.
-SRC_DIR="${OPENWRT_SRC:-$HOME/.local/share/openwrt-wr941nd/src}"
 
 # PODMAN is an array so we can transparently prepend `flatpak-spawn --host`.
 if command -v podman >/dev/null 2>&1; then
@@ -32,7 +24,7 @@ fi
 
 podman_run() { "${PODMAN[@]}" "$@"; }
 
-# Container for the 16M flow (24.10+), built from Containerfile.modern.
+# Build container, from Containerfile.modern.
 MODERN_IMAGE="openwrt-builder-modern"
 
 # Build MODERN_IMAGE, or rebuild it when Containerfile.modern differs from the

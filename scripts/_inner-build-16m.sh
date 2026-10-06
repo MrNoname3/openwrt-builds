@@ -9,10 +9,8 @@
 #   /opt/scripts -> project scripts/ (read-only)
 set -euo pipefail
 
-# SEED_FILE comes from the pin file (ci/*.env) via build-16m.sh or the CI
-# workflow -- currently wr941nd-v4-25.12-16m.seed.config. The 24.10 fallback
-# below only applies when this script is run by hand without SEED_FILE set.
-SEED="/opt/config/${SEED_FILE:-wr941nd-v4-24.10-16m.seed.config}"
+# SEED_FILE comes from the pin file (ci/*.env) via build-16m.sh or the CI workflow.
+SEED="/opt/config/${SEED_FILE:?SEED_FILE must name a seed under config/}"
 DTS_SRC="/opt/config/ath79-16m/ar7240_tplink_tl-wr941-v4-16m.dts"
 DEV_SRC="/opt/config/ath79-16m/tplink_tl-wr941-v4-16m.device.mk"
 PROFILE_SYM="CONFIG_TARGET_ath79_tiny_DEVICE_tplink_tl-wr941-v4-16m=y"

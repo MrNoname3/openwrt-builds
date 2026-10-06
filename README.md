@@ -95,9 +95,8 @@ u-boot/art dumps are device-unique and not in git — see the
 > ⚠️ **When editing a seed:** adding or removing `kmod-*` packages changes the
 > kernel VERMAGIC, and in an already-built tree `package/install` then fails
 > with *"Cannot satisfy … kernel (= hash)"*. Rebuild the kernel in that case
-> (the legacy flow has `CLEAN=kernel` / `CLEAN=all`; for the 16M flow, delete
-> the build tree or run `make clean` in it). Seed changes that only touch
-> userspace packages are safe.
+> (delete the build tree, or run `make clean` in it). Seed changes that only
+> touch userspace packages are safe.
 
 ## CI — automated builds and releases
 
@@ -182,9 +181,7 @@ One-time setup after forking:
    consequence of *this* repo's push mirror, not of the tooling. Rename the
    branch check if your default branch is `main`.
 
-> **Note on the build container.** `Containerfile` (the legacy 18.06 flow) is
-> permanently pinned to Debian **bullseye** — it needs `python2`, and bullseye
-> is the last release that ships it. `Containerfile.modern` stays on
+> **Note on the build container.** `Containerfile.modern` stays on Debian
 > **bookworm** deliberately: a base image swap changes the toolchain and
 > invalidates the reproducibility baseline, so it is an approval-only decision
 > rather than an automatic bump.
@@ -231,7 +228,6 @@ other difference is a supply-chain red flag.
 | [docs/operations.md](docs/operations.md) | running the AP: setup, updates, harmless messages, pitfalls |
 | [CLAUDE.md](CLAUDE.md) | how to work on this repo: ground rules, forge topology, gotchas |
 | `firmware/` | not in git: backups, dumps and built images |
-| [Containerfile](Containerfile), `scripts/{fw,img}-build.sh`, `scripts/shell.sh`, `scripts/clean.sh`, `config/*18.06*` | legacy 18.06/ar71xx flow → [docs/legacy-18.06.md](docs/legacy-18.06.md). These do **not** touch the current 16M build tree |
 
 ## Operations / troubleshooting (deployed AP)
 
@@ -239,11 +235,11 @@ Dumb-AP setup, updating, harmless log messages and known pitfalls — including
 the **spontaneous reboots a connected serial header can cause** — are in
 [docs/operations.md](docs/operations.md).
 
-## Legacy: the original 18.06 flow
+## History: the original 18.06 flow
 
-The project started out reproducing and slimming the stock 4 MB firmware; that
-work is done and superseded, but still builds —
-see [docs/legacy-18.06.md](docs/legacy-18.06.md).
+The project started out reproducing and slimming the stock 4 MB firmware on
+OpenWrt 18.06 (ar71xx). That flow is retired; its build container, scripts and
+seeds are preserved at the `legacy-18.06` tag.
 
 ## License
 

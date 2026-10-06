@@ -10,20 +10,15 @@
 		}
 	],
 	"settings": {
-		// The multi-GB OpenWrt source tree lives outside the repo; hide only the
-		// safety-net src/ mount point from the explorer. firmware/ (built
-		// images, backups) stays VISIBLE but is kept out of search and the
-		// file watcher below so the workspace stays snappy.
+		// firmware/ (built images, backups) stays visible but is kept out of
+		// search and the file watcher so the workspace stays snappy.
 		"files.exclude": {
-			"**/.git": true,
-			"src": true
+			"**/.git": true
 		},
 		"search.exclude": {
-			"src": true,
 			"firmware": true
 		},
 		"files.watcherExclude": {
-			"**/src/**": true,
 			"**/firmware/**": true
 		},
 		// Treat the project's non-standard file types sensibly.
