@@ -28,7 +28,8 @@ scan() { # scan <label> <pattern-ERE> [allowlist-ERE]
     fi
     if [ -n "$hits" ]; then
         printf '%s\n' "$hits"
-        echo "FAIL: possible private data in tracked files ($label)"
+        echo "FAIL: possible private data in tracked files ($label);"
+        echo "      a false positive goes in this scan's allowlist in scripts/check.sh"
         fail=1
     fi
 }
@@ -70,7 +71,7 @@ if [ ${#skipped[@]} -gt 0 ]; then
     echo "Skipped (not installed here; CI runs them): ${skipped[*]}"
 fi
 if [ "$fail" -ne 0 ]; then
-    echo "Checks FAILED. A secret-scan false positive? Extend the allowlist in scripts/check.sh."
+    echo "Checks FAILED."
     exit 1
 fi
 echo "All checks passed."
