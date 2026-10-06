@@ -1,6 +1,19 @@
-# Firmware binaries (stock dumps + our build outputs) — not version controlled.
-firmware/
+# --- Device-unique data and build output: never committed ---
 
-# Editor / OS noise
+# Flash dumps (the unit's MAC in u-boot, its WiFi calibration in art) and the
+# images built from them. The directory itself is kept so a fresh clone shows
+# where they go.
+firmware/*
+!firmware/.gitkeep
+
+# --- Local / tooling junk ---
+.claude/
+*.log
 *.swp
 .DS_Store
+
+# A shared drop for working files: an agent's own temp directory is not on the
+# host's filesystem, so anything the user or host-side podman has to open lands
+# here instead.
+work/*
+!work/.gitkeep

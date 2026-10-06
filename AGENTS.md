@@ -36,6 +36,7 @@ What the project is and how to build and release it is in the
 | `<build tree>/private-key.pem`, `public-key.pem` | no | the project's apk signing keypair; CI holds the same pair as Actions secrets |
 | `firmware/router-backup/<ts>/` | no | mtd dumps of the original flash — `u-boot` and `art` are irreplaceable |
 | `firmware/built/16m-<version>/` | no | build output; the FULLFLASH image only when a backup is present |
+| `work/` | no (directory only) | scratch files: downloads, comparison inputs, captured logs |
 | podman image `openwrt-builder` | no | build container from `Containerfile`, rebuilt automatically when that file changes |
 
 On a fresh machine `firmware/` is empty and there is no build tree: the build
@@ -48,6 +49,15 @@ The container image carries the sha256 of the `Containerfile` it was
 built from; `build.sh` and `repro-compare.sh` rebuild it when the file
 changes (Renovate digest bumps included), so local builds use the same base as
 CI.
+
+## Working files go in work/
+
+An agent's own temp directory is not on the host's filesystem, so a path
+reported from there is one the user cannot open, and host-side podman cannot
+mount it either — `repro-compare.sh` on a downloaded release image fails that
+way. Downloads, comparison inputs and captured logs belong in `work/`: the
+directory is committed, its contents are gitignored, and everything in it can
+be deleted at any time. Keep secrets out of it; it is plain and unencrypted.
 
 ## Environment
 
