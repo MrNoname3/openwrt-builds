@@ -12,8 +12,8 @@ on:
   workflow_dispatch:
 
 # Read-only by default: the build job runs the OpenWrt build and third-party
-# Actions, including whatever a Renovate branch brings. Only the release job,
-# which runs on v* tags, gets write access.
+# Actions, including whatever a Renovate branch brings. Only the jobs that run
+# on v* tags get write access.
 permissions:
   contents: read
 
@@ -125,10 +125,31 @@ jobs:
           name: ${{ env.DEVICE_NAME }}-${{ env.OPENWRT_TAG }}
           path: out/
 
+  attest:
+    # Its own job, so the third-party action in the release job cannot mint an
+    # OIDC token and sign attestations in this repository's name.
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      id-token: write # sign the provenance attestation
+      attestations: write # store it
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.build.outputs.device_name }}-${{ needs.build.outputs.openwrt_tag }}
+          path: out/
+
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: out/*
+
   release:
     # Only a v* tag ref publishes: a tag push, or a dispatch on the tag to
     # re-release.
-    needs: build
+    needs: [build, attest]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-24.04
     timeout-minutes: 15

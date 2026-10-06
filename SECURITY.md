@@ -9,6 +9,14 @@ independently against a local build of the same tag — see "Reproducibility"
 in the [README](README.md). A difference beyond the documented residue is
 worth reporting.
 
+Each Release asset also has a signed build-provenance attestation that ties it
+to this repository's workflow run and commit (Releases up to v25.12.5 were
+published without one):
+
+```bash
+gh attestation verify <asset> --repo MrNoname3/openwrt-builds
+```
+
 Packages in the images are signed with the project's apk key. Its private half
 is held by the maintainer and as an Actions secret, never in this repository.
 
