@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# Reproducibility / supply-chain cross-check: compare two sysupgrade images of
-# the SAME OpenWrt tag (e.g. a local podman build vs the GitHub CI release
-# artifact). PASSes only when the images are byte-identical apart from the
-# known-benign build-timestamp residue -- see _inner-repro-compare.sh for the
-# exact whitelist and how it was established.
+# Reproducibility / supply-chain cross-check of two sysupgrade images of the
+# same OpenWrt tag (e.g. a local build and the Release asset). Passes only when
+# they are byte-identical apart from the residue whitelisted in
+# _inner-repro-compare.sh.
 #
 # Usage:  scripts/repro-compare.sh imageA-sysupgrade.bin imageB-sysupgrade.bin
 set -euo pipefail

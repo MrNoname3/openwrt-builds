@@ -1,20 +1,13 @@
 #!/usr/bin/env bash
-# Pin-driven build entry point -- builds EXACTLY what the GitHub CI builds.
+# Local build: the same build as the CI, driven by the same ci/<device>.env.
 #
-# The single source of truth for "what to build" is the per-device pin file
-# ci/<device>.env (OPENWRT_TAG + SEED_FILE + DEVICE_NAME) -- the same file the
-# CI reads. A fresh machine reproduces the CI build with:
+# Clones the OpenWrt tree at the pinned tag when it is missing (blobless, so
+# getver.sh sees the full history and derives the right revision), checks its
+# commit against the pin, builds in the container and collects the images into
+# firmware/built/16m-<version>/ -- plus the FULLFLASH image (u-boot + firmware
+# + art) when a router backup exists under firmware/router-backup/.
 #
-#   git clone <this repo> && cd <repo> && ./scripts/build.sh
-#
-# It selects the device pin, ensures the OpenWrt source tree exists at the
-# pinned tag (blobless clone: full commit graph, so getver.sh derives the
-# correct rXXXXX revision), builds the firmware in the container and collects
-# the images into firmware/built/16m-<version>/. When a router backup exists
-# under firmware/router-backup/, it also assembles the full-chip FULLFLASH image
-# (u-boot + firmware + art) for writing the new chip with flashrom.
-#
-# Knobs (env vars -- no TTY needed):
+# Knobs (environment variables):
 #   DEVICE=<name>          device pin to use; required when several ci/*.env exist
 #   TAG=vX.Y.Z             override the pinned OpenWrt tag (skips the
 #                          OPENWRT_COMMIT check, which belongs to the pin)

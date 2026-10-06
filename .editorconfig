@@ -1,7 +1,5 @@
-# EditorConfig: editor-agnostic enforcement of the project's whitespace rules,
-# applied in VS Code by the recommended EditorConfig extension. Spaces
-# everywhere: 4 for shell, the DTS and the Containerfile, 2 for the rest.
-# https://editorconfig.org
+# Whitespace rules for every editor; VS Code applies them through the
+# recommended EditorConfig extension. https://editorconfig.org
 root = true
 
 [*]

@@ -1,23 +1,7 @@
-# Build the custom 16MB TL-WR941ND v4 firmware from source, exactly like the
-# local build: same Containerfile image, same _inner-build.sh, same
-# seed -- so a local podman build and this CI build are directly comparable
-# (supply-chain cross-check).
-#
-# The repo's source of truth is a self-hosted Gitea instance that push-mirrors
-# here; GitHub is the build + release executor. Flow:
-#
-# - push to a renovate/** branch (Renovate's bump branch, arriving via the
-#   mirror): canary build, no release. Renovate only touches build-relevant
-#   files, so no paths filter is needed.
-# - push of a v* tag (created on Gitea by scripts/tag-release.sh after the
-#   bump PR is merged, arriving via the mirror): build + publish the Release.
-#   Plain master pushes do NOT build -- their content was already canary-built
-#   on the renovate branch, and doc-only pushes have nothing to build.
-# - workflow_dispatch: manual run on any ref; dispatching on an existing tag
-#   re-runs that release (e.g. after deleting it for a re-release).
-#
-# NOT built here: the FULLFLASH image. It needs the device-unique u-boot + art
-# dumps (with the device MAC), which live only in the local backup, on purpose.
+# The same build as scripts/build.sh, so the two can be compared byte for byte.
+# A renovate/** branch gets a canary build; a v* tag also publishes the Release
+# (the README's CI section has the whole flow). The FULLFLASH image is never
+# built here: it needs the unit's own u-boot and art dumps.
 
 name: build
 
@@ -96,14 +80,10 @@ jobs:
           fi
 
       - name: Install the project apk signing keypair
-        # Without this every build tree generates its OWN signing key: the
-        # public key lands in /etc/apk/keys/public-key.pem and every package
-        # signature depends on it, so two builds of the same tag can never be
-        # bit-identical. The secrets hold the project keypair -- the same
-        # private-key.pem / public-key.pem that sit in the local tree's root.
-        # Skipped (build falls back to a fresh key) if the secret is not set.
-        # NOTE: the secrets context is not allowed in step-level `if`, so the
-        # emptiness check happens in the shell instead.
+        # The project keypair, as in the local tree's root: without it the tree
+        # generates its own key and no package signature matches a local build.
+        # The secrets context is not allowed in a step-level `if`, hence the
+        # emptiness check in the shell.
         env:
           APK_PRIVATE_KEY: ${{ secrets.APK_PRIVATE_KEY }}
           APK_PUBLIC_KEY: ${{ secrets.APK_PUBLIC_KEY }}
@@ -185,18 +165,12 @@ jobs:
             Custom 16MB build for the hardware-modded TL-WR941ND v4
             (`tplink_tl-wr941-v4-16m`, ath79/tiny, seed `${{ env.SEED_FILE }}`).
 
-            **Requires BOTH hardware mods: 16MB flash (W25Q128-class) AND the
-            32→64MB RAM upgrade.** Never flash a stock device: the stock 4MB
-            flash cannot hold this image, and on the stock 32MB RAM OpenWrt
-            25.12 constantly OOM-reboots.
+            **Only for a board with BOTH mods: 16MB flash and 64MB RAM.**
+            ⚠️ `sysupgrade` will not stop you: the image claims the stock
+            compat string, so a stock 4MB device accepts it without `--force`
+            and bricks. Read the
+            [hardware requirements](${{ github.server_url }}/${{ github.repository }}#readme)
+            before flashing.
 
-            ⚠️ **`sysupgrade` will NOT stop you.** The modded board reports the
-            stock compat string, so this image claims `tplink,tl-wr941-v4` (and
-            `tl-wr941nd-v4`, `tl-wr741nd`) in `SUPPORTED_DEVICES` — a stock 4MB
-            device accepts it without `--force` and bricks. The wrong-device
-            guard does not apply here; verify your hardware yourself.
-
-            Upgrade from a running 16M build:
-            `sysupgrade` with settings kept, using the `-sysupgrade.bin` image.
-            Verify `SHA256SUMS` first; optionally cross-check against a local
-            podman build of the same tag.
+            Upgrade a running 16M build with the `-sysupgrade.bin` image,
+            settings kept, after checking it against `SHA256SUMS`.

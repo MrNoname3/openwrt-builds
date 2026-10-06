@@ -1,20 +1,9 @@
 #!/usr/bin/env bash
-# Release gate -- every repository check in one place. Run it before pushing,
-# or let .githooks/pre-push run it (git config core.hooksPath .githooks):
-#
-#   ./scripts/check.sh
-#
-# CI (.github/workflows/check.yml) runs this same script. Steps:
-#   1. secret scan -- tracked files; the generic patterns below, plus private
-#                     ones from the gitignored .secret-patterns.local (one
-#                     extended regex per line, '#' comments allowed)
-#   2. shellcheck  -- scripts/*.sh and .githooks/*, configured by .shellcheckrc
-#   3. yamllint    -- the workflows, configured by .yamllint
-#   4. actionlint  -- the workflows' Actions semantics: expressions, job
-#                     outputs, permissions, and shellcheck on run: blocks
-#   5. JSON syntax -- renovate.json
-# The secret scan needs only git. The linters run where they are installed;
-# CI installs them, and a local run without them says which ones it skipped.
+# Release gate, run before every push (by .githooks/pre-push once enabled) and
+# by .github/workflows/check.yml. The secret scan of the tracked files needs
+# only git; its private patterns come from the gitignored .secret-patterns.local
+# (one extended regex per line). The linters run where they are installed, and
+# a run without them names the ones it skipped.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
