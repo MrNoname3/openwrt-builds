@@ -6,6 +6,9 @@
 firmware/*
 !firmware/.gitkeep
 
+# Private secret-scan patterns read by scripts/check.sh (hostnames, addresses).
+.secret-patterns.local
+
 # --- Local / tooling junk ---
 .claude/
 *.log

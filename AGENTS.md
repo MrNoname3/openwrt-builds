@@ -25,7 +25,13 @@ What the project is and how to build and release it is in the
 - **Do not change the deployed AP** (config, reboot, sysupgrade) without the
   owner's explicit go-ahead. Reading its state is fine.
 - Commit subjects use an area prefix — `docs:`, `ci:`, `seed:`, `build:`,
-  `renovate:`, `tag-release:` — one concern per commit.
+  `scripts:`, `renovate:`, `editor:` — one concern per commit.
+- **Run `./scripts/check.sh` before every push** (a push is a publication,
+  through the mirror). It scans the tracked files for private data and runs
+  shellcheck and yamllint where they are installed; `.github/workflows/check.yml`
+  runs the same script on GitHub. The private scan patterns live in the
+  gitignored `.secret-patterns.local`; on a machine without that file only the
+  generic patterns run, so ask the owner for it rather than skipping the scan.
 
 ## Where things live
 

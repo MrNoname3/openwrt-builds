@@ -1,0 +1,30 @@
+name: check
+
+# Runs scripts/check.sh, the same gate as a local run, on every push. It runs
+# on GitHub only: Actions is disabled for this repository on the Gitea side.
+# Without the gitignored .secret-patterns.local, the secret scan here uses the
+# generic patterns alone.
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+# Least privilege: this job only reads the repository. Without this block the
+# GITHUB_TOKEN inherits the repository default, which may be read-write.
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10   # a hung step (e.g. a stalled apt download) fails fast instead of idling
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install linters
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends shellcheck yamllint
+
+      - name: Run the release gate (same script as local runs)
+        run: ./scripts/check.sh
