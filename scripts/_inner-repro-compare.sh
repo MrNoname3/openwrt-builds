@@ -1,15 +1,10 @@
 #!/usr/bin/env bash
 # Runs INSIDE the build container. Compares two sysupgrade images of the SAME
-# OpenWrt tag for reproducibility, tolerating ONLY the known-benign residue:
-# build timestamps embedded by two packages that ignore SOURCE_DATE_EPOCH
-# (apk-mbedtls: gzip MTIME in the help blob inside usr/bin/apk; nftables-json:
-# two raw timestamps in libnftables.so), plus their cascade into the apk db
-# checksums (C:/S:/Z: lines) and lib/apk/db/scripts.tar.gz (gzip MTIME).
-# Everything else -- the whole kernel and every other rootfs file -- must be
-# BYTE-IDENTICAL, otherwise the verdict is FAIL (supply-chain red flag).
-#
-# Identified on 2026-07-06 by diffing a GitHub-CI build against a clean local
-# build of v25.12.4 (see the repo README's CI section).
+# OpenWrt tag for reproducibility, tolerating ONLY the known-benign residue in
+# the apk database: the checksum lines (C:/S:/Z:) of lib/apk/db/installed and
+# the gzip MTIME of lib/apk/db/scripts.tar.gz, which differ between build
+# trees. Everything else -- the whole kernel and every other rootfs file --
+# must be BYTE-IDENTICAL, otherwise the verdict is FAIL (supply-chain red flag).
 #
 # Usage (see repro-compare.sh wrapper): _inner-repro-compare.sh A.bin B.bin
 set -euo pipefail
@@ -17,9 +12,6 @@ set -euo pipefail
 A="$1"; B="$2"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
-
-# Max differing bytes tolerated inside a whitelisted timestamp-carrying binary.
-TS_BYTE_LIMIT=16
 
 echo "[*] Comparing:"
 echo "    A: $A"
@@ -63,7 +55,7 @@ if grep -q '^Only in' "$WORK/diff.txt"; then
     echo "[!] FAIL: file set differs:"; grep '^Only in' "$WORK/diff.txt" | head; exit 1
 fi
 
-ALLOWED='^(lib/apk/db/installed|lib/apk/db/scripts\.tar\.gz|usr/bin/apk|usr/lib/libnftables\.so.*)$'
+ALLOWED='^(lib/apk/db/installed|lib/apk/db/scripts\.tar\.gz)$'
 fail=0
 while IFS= read -r f; do
     if ! echo "$f" | grep -qE "$ALLOWED"; then
@@ -81,18 +73,6 @@ while IFS= read -r f; do
             ;;
         lib/apk/db/scripts.tar.gz)
             echo "[ok] $f: differs (gzip MTIME; content cascade of the same residue)"
-            ;;
-        *)
-            # Timestamp-carrying binaries: tolerate only a few differing bytes.
-            n=$(python3 -c "
-import sys
-a=open('$WORK/a-root/$f','rb').read(); b=open('$WORK/b-root/$f','rb').read()
-print(sum(1 for x,y in zip(a,b) if x!=y)+abs(len(a)-len(b)))")
-            if [ "$n" -le "$TS_BYTE_LIMIT" ]; then
-                echo "[ok] $f: $n byte(s) differ (embedded build timestamp)"
-            else
-                echo "[!] FAIL: $f differs in $n bytes (> $TS_BYTE_LIMIT limit)"; fail=1
-            fi
             ;;
     esac
 done < "$WORK/changed.txt"
