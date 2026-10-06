@@ -44,7 +44,6 @@ echo "[*] Reading partition map and device info ..."
     for d in /sys/class/mtd/mtd*; do
         if [ -e "$d/offset" ]; then echo "$(basename "$d") $(cat "$d/offset") $(cat "$d/size")"; fi
     done
-    true
 ' > "$dest/device-info.txt" 2>"$dest/ssh-err.txt" || true
 
 # /proc/mtd lines: mtdN: <hexsize> <hexerase> "name"
