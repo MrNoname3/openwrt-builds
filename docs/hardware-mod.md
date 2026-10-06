@@ -123,8 +123,10 @@ output points to a bad joint on an address line: rework every pin.
 
 ## Step 6 — first boot & checks
 
-A serial console (soldered header, 115200 8N1) is essentially mandatory for
-this stage — but read the [SysRq warning](operations.md#spontaneous-reboots-from-the-serial-consoles-sysrq)
+A serial console is essentially mandatory for this stage. The OpenWrt wiki
+shows [where the v4's header is and its pinout](https://openwrt.org/toh/tp-link/tl-wr941nd#serial);
+the port runs at 115200 8N1. Read the
+[SysRq warning](operations.md#spontaneous-reboots-from-the-serial-consoles-sysrq)
 before leaving the header attached.
 
 The AR7240's UART TX line is driven weakly: without help the output is garbled
