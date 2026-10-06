@@ -2,15 +2,15 @@
 
 This is the full guide for upgrading a TP-Link TL-WR941ND **v4** (Atheros
 AR7240 @ 400 MHz, ath9k `pci168c:002a` radio) so it can run **current
-OpenWrt** (25.12, kernel 6.12). Stock hardware — 4 MB SPI flash, 32 MB RAM —
-stopped being usable after OpenWrt 18.06/19.07.
+OpenWrt**. Stock hardware — 4 MB SPI flash, 32 MB RAM — stopped being usable
+after OpenWrt 18.06/19.07.
 
 Both mods are **required** for the images this repo builds:
 
 | Mod | Stock | Upgraded | Why required |
 |-----|-------|----------|--------------|
 | SPI flash | 4 MB Winbond W25Q32 (SOIC-8) | 16 MB W25Q128-class (this unit: XTX XT25F128B) | the 16M image does not fit in 4 MB |
-| RAM | 32 MB | 64 MB (single ×16 DDR1 chip) | kernel 6.12 + LuCI on 32 MB OOM-reboots constantly (verified on this unit) |
+| RAM | 32 MB | 64 MB (single ×16 DDR1 chip) | current OpenWrt with LuCI does not run reliably in 32 MB ([why](operations.md#why-32-mb-ram-is-not-enough)) |
 
 While the board is open, consider **recapping** too (this unit: 5× 470 µF/16 V).
 
@@ -156,12 +156,7 @@ After the initial swap you never need the programmer again: every new release
 from this repo is flashed with the **sysupgrade** image (settings kept). The
 FULLFLASH path exists only for the initial swap and for disaster recovery.
 
-> ⚠️ The board still reports `tplink,tl-wr941-v4`, so **never** use official
-> OpenWrt images or attended sysupgrade — their profile targets the stock 4 MB
-> layout and would brick the device.
->
-> ⚠️ The same compat string forces this repo's device definition to claim
-> `tplink,tl-wr941-v4` in `SUPPORTED_DEVICES`, which means the check runs in
-> **both** directions: these images also install on a *stock* 4 MB device (or a
-> `tl-wr741nd`) without `--force`, and brick it. Never hand a build from here to
-> someone with an unmodded router.
+> ⚠️ The board still reports the stock compat string, which cuts both ways:
+> official images and attended sysupgrade would brick the modded unit, and
+> these images would brick a stock one. The README's warning at the top
+> explains both.

@@ -17,18 +17,18 @@ What lives here:
 
 > ⚠️ **Hardware requirement.** The images need **BOTH** mods: 16 MB flash
 > (W25Q128-class) **and** the 32→64 MB RAM upgrade. Stock 4 MB flash cannot
-> hold them, and on stock 32 MB RAM kernel 6.12 OOM-reboots constantly
-> (verified on this unit). **Never flash a stock device**, and never use
-> official OpenWrt images on a modded one (the official
-> `tplink,tl-wr941-v4` profile targets the 4 MB layout → brick).
+> hold them, and current OpenWrt does not run reliably in the stock 32 MB RAM
+> ([why](docs/operations.md#why-32-mb-ram-is-not-enough)). **Never flash a
+> stock device**, and never use official OpenWrt images on a modded one (the
+> official `tplink,tl-wr941-v4` profile targets the 4 MB layout → brick).
 >
 > ⚠️ **No safety net — read this before you flash anything.** The modded board
 > still reports the stock compat string, so the 16M image *must* claim
 > `tplink,tl-wr941-v4` in `SUPPORTED_DEVICES` to be installable at all. The
 > consequence: **`sysupgrade` will happily accept these images on a stock 4 MB
-> device without `--force`** (the list also covers `tl-wr741nd`). The usual
-> "wrong device" guard does not protect you here. Only ever flash a board you
-> personally modded, and keep the FULLFLASH image + a programmer for recovery.
+> device without `--force`**. The usual "wrong device" guard does not protect
+> you here. Only ever flash a board you personally modded, and keep the
+> FULLFLASH image + a programmer for recovery.
 
 ## From a stock unit to where this repo is — the complete path
 
@@ -71,15 +71,9 @@ cd openwrt-builds
 JOBS=4 ./scripts/build.sh          # lower JOBS if the build runs out of memory
 ```
 
-Knobs (all optional, no TTY needed):
-
-| Variable | Meaning |
-|----------|---------|
-| `DEVICE=<name>` | which `ci/*.env` pin to build when several exist |
-| `TAG=vX.Y.Z` | override the pinned OpenWrt tag |
-| `JOBS=N` | parallel jobs (default `nproc`) |
-| `OPENWRT_SRC_ROOT=dir` | where source trees live (default `~/.local/share/openwrt-wr941nd`) |
-| `DRY_RUN=1` | print the resolved plan (pin/tag/seed/tree), change nothing |
+Optional settings (which device, a different tag, parallelism, where the source
+trees live, a dry run) are environment variables listed at the top of
+[scripts/build.sh](scripts/build.sh).
 
 Requirements: rootless **podman** (the scripts auto-detect a VS Code Flatpak
 terminal and go through `flatpak-spawn --host`), ~20 GB disk for the build
@@ -150,18 +144,16 @@ Everything up to the merge happens on its own; the parts that need you are
    pushes to Gitea; the mirror forwards the tag, and GitHub's tag build
    publishes the **Release**. A tag build aborts immediately if the tag and the
    pin disagree.
-4. **Flash** — download the `-sysupgrade.bin` from the Release, check it
-   against `SHA256SUMS`, then upgrade from LuCI or over SSH with settings
-   kept. Optionally cross-check the release against your own build first:
+4. **Flash** — see [Updating](docs/operations.md#updating) in the operations
+   guide. Optionally cross-check the release against your own build first:
    ```bash
    JOBS=4 ./scripts/build.sh                      # same pin as CI
    scripts/repro-compare.sh release-sysupgrade.bin firmware/built/16m-<ver>/*sysupgrade.bin
    ```
 
-A **series jump** (e.g. v26.x) or a build-container major bump never gets an
-automatic PR: it waits on Renovate's dependency dashboard until you approve
-it, because it needs a DTS/seed review first. Treat the first flash of a new
-series as a risk moment — keep the FULLFLASH image and the CH341A at hand.
+Treat the first flash of a new series (after approving its bump on the
+dependency dashboard) as a risk moment — keep the FULLFLASH image and the
+CH341A at hand.
 
 ### Forking this repo for your own device
 

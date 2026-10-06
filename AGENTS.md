@@ -48,15 +48,9 @@ What the project is and how to build and release it is in the
 | podman image `openwrt-builder` | no | build container from `Containerfile`, rebuilt automatically when that file changes |
 
 On a fresh machine `firmware/` is empty and there is no build tree: the build
-still works, it just skips the FULLFLASH assembly. A fresh build tree generates
-its own signing keypair, so its images differ from the CI's in every package
-signature; copy the project keypair into the tree root before the first build
-when bit-identity with CI matters.
-
-The container image carries the sha256 of the `Containerfile` it was
-built from; `build.sh` and `repro-compare.sh` rebuild it when the file
-changes (Renovate digest bumps included), so local builds use the same base as
-CI.
+still works, it just skips the FULLFLASH assembly. Copy the project keypair into
+the tree root before the first build when bit-identity with CI matters (why:
+the README's "Reproducibility").
 
 ## Working files go in work/
 
@@ -69,23 +63,17 @@ be deleted at any time. Keep secrets out of it; it is plain and unencrypted.
 
 ## Environment
 
-- Scripts auto-detect a VS Code **Flatpak** sandbox and run podman through
-  `flatpak-spawn --host`. Other host tools (ssh, ping, flashrom, the serial
-  port) are reachable the same way only; the sandbox's `/tmp` is not the host's,
-  so pass data to host commands on stdin.
-- Bind mounts carry `:Z` for SELinux hosts.
-- A clean build takes 2–4 h at `JOBS=4`; a too-high `JOBS` runs out of memory.
+From a VS Code **Flatpak** sandbox, host tools other than podman (which the
+scripts handle) — ssh, ping, flashrom, the serial port — are reachable only
+through `flatpak-spawn --host`, and the sandbox's `/tmp` is not the host's:
+pass data on stdin or through `work/`.
 
 ## Forge topology
 
-- `origin` is a **self-hosted Gitea** — the source of truth, default branch
-  `master`. Gitea **push-mirrors** to GitHub (`MrNoname3/openwrt-builds`), where
-  Actions builds and Releases are published. There is no `github` remote;
-  reach GitHub through its API or web UI.
-- A self-hosted **Renovate** runs daily against Gitea and opens PRs for OpenWrt
-  patch releases (`OPENWRT_TAG` in `ci/*.env`), SHA-pinned Actions and
-  base-image digests. Each `renovate/**` branch reaches GitHub through the
-  mirror and runs a **canary build** there.
+The README's CI section describes the setup: Gitea as the source of truth,
+push-mirrored to GitHub (`MrNoname3/openwrt-builds`), which builds and
+publishes. Here, `origin` is the Gitea with default branch `master`; there is
+no `github` remote, so reach GitHub through its API or web UI.
 
 ### Handling a Renovate PR
 
@@ -108,12 +96,9 @@ to judgement:
   of `.gitea/default_merge_message/MERGE_TEMPLATE.md`, and push. The repo has
   manual-merge autodetection enabled, so Gitea marks the PR merged within
   seconds; then delete its branch.
-- **Tags and releases originate on `origin` only.** The push mirror prunes refs
-  that exist only on GitHub.
 - A tag build runs the workflow as it is **at the tagged commit**. To change a
   published release, delete the Release on GitHub (web UI) and the tag on
   `origin`, then re-run `tag-release.sh`.
-- Plain `master` pushes trigger no build, so docs-only commits cost nothing.
 - Merge commits get mirrored to the public GitHub repo; the merge-message
   template keeps Gitea's `Reviewed-on: <forge URL>` trailer out of them.
 
@@ -126,8 +111,6 @@ to judgement:
 - Rebuilding the same tag never brings newer packages: a release's
   `feeds.conf.default` pins every feed to a commit. Newer packages need a new
   OpenWrt release.
-- Adding or removing a `kmod-*` changes the kernel vermagic; in an
-  already-built tree, rebuild the kernel (see the README).
 
 ## Ideas not pursued yet
 
