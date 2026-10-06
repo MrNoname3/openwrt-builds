@@ -13,7 +13,6 @@
 #   bump PR is merged, arriving via the mirror): build + publish the Release.
 #   Plain master pushes do NOT build -- their content was already canary-built
 #   on the renovate branch, and doc-only pushes have nothing to build.
-# - pull_request: kept for GitHub-side PRs (rare after the migration).
 # - workflow_dispatch: manual run on any ref; dispatching on an existing tag
 #   re-runs that release (e.g. after deleting it for a re-release).
 #
@@ -23,13 +22,6 @@
 name: build
 
 on:
-  pull_request:
-    paths:
-      - 'ci/**'
-      - 'config/**'
-      - 'scripts/**'
-      - 'Containerfile'
-      - '.github/workflows/build.yml'
   push:
     branches: ['renovate/**']
     tags: ['v*']
