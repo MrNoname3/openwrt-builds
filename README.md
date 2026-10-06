@@ -191,7 +191,7 @@ flag.
 | [AGENTS.md](AGENTS.md) | notes for coding agents: ground rules, forge topology, gotchas |
 | `firmware/` | flash backups and built images; the directory is in git, its contents never are |
 | `work/` | scratch files (downloads, comparison inputs, logs); contents not in git |
-| `.githooks/` | `pre-push` runs `scripts/check.sh` (enable with `git config core.hooksPath .githooks`) |
+| `.githooks/` | `pre-push` runs `scripts/check.sh` on the tree and the commits being pushed (enable with `git config core.hooksPath .githooks`) |
 | `.editorconfig`, `.vscode/`, [openwrt-wr941nd.code-workspace](openwrt-wr941nd.code-workspace) | editor settings: whitespace rules in `.editorconfig`, VS Code extras in the other two |
 
 ## History: the original 18.06 flow

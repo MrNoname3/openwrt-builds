@@ -27,11 +27,13 @@ What the project is and how to build and release it is in the
 - Commit subjects use an area prefix — `docs:`, `ci:`, `seed:`, `config:`,
   `build:`, `scripts:`, `renovate:`, `editor:`, `repo:`, `style:` — one
   concern per commit.
-- **Run `./scripts/check.sh` before every push** (a push is a publication,
-  through the mirror); `git config core.hooksPath .githooks` makes git run it
-  as a pre-push hook. Its private scan patterns live in the gitignored
-  `.secret-patterns.local`; on a machine without that file only the generic
-  patterns run, so ask the owner for it rather than skipping the scan.
+- **Every push goes through `scripts/check.sh`** (a push is a publication,
+  through the mirror): `git config core.hooksPath .githooks` makes git run it
+  as a pre-push hook, which also scans the commits being pushed, messages
+  included. A manual `./scripts/check.sh` sees only the tree. Its private scan
+  patterns live in the gitignored `.secret-patterns.local`; on a machine
+  without that file only the generic patterns run, so ask the owner for it
+  rather than skipping the scan.
 
 ## Where things live
 
