@@ -12,8 +12,8 @@
 #include "ar7240_tplink_tl-wr.dtsi"
 
 / {
-	model = "TP-Link TL-WR941N/ND v4 (16M)";
-	compatible = "tplink,tl-wr941-v4", "qca,ar7240";
+    model = "TP-Link TL-WR941N/ND v4 (16M)";
+    compatible = "tplink,tl-wr941-v4", "qca,ar7240";
 };
 
 // 25.12 binds the ath9k (AR9280) WiFi via its PCI id and pulls the radio
@@ -22,41 +22,41 @@
 // harmless no-op there but is REQUIRED for 25.12 (otherwise the DTB build fails
 // with "Reference to non-existent node or label calibration_art_1000").
 &ath9k {
-	compatible = "pci168c,002a";
+    compatible = "pci168c,002a";
 };
 
 &spi {
-	flash@0 {
-		partitions {
-			/delete-node/ partition@20000;
-			/delete-node/ partition@3f0000;
+    flash@0 {
+        partitions {
+            /delete-node/ partition@20000;
+            /delete-node/ partition@3f0000;
 
-			partition@20000 {
-				compatible = "tplink,firmware";
-				reg = <0x20000 0xfd0000>;
-				label = "firmware";
-			};
+            partition@20000 {
+                compatible = "tplink,firmware";
+                reg = <0x20000 0xfd0000>;
+                label = "firmware";
+            };
 
-			partition@ff0000 {
-				reg = <0xff0000 0x10000>;
-				label = "art";
-				read-only;
+            partition@ff0000 {
+                reg = <0xff0000 0x10000>;
+                label = "art";
+                read-only;
 
-				// Re-create the calibration nvmem cell that lived in the
-				// stock art@3f0000 we deleted above. Offset 0x1000 is relative
-				// to the art partition start, and the art contents are copied
-				// byte-for-byte to flash 0xFF0000, so the WiFi calibration is
-				// still at +0x1000. Referenced by &ath9k in 25.12.
-				nvmem-layout {
-					compatible = "fixed-layout";
-					#address-cells = <1>;
-					#size-cells = <1>;
+                // Re-create the calibration nvmem cell that lived in the
+                // stock art@3f0000 we deleted above. Offset 0x1000 is relative
+                // to the art partition start, and the art contents are copied
+                // byte-for-byte to flash 0xFF0000, so the WiFi calibration is
+                // still at +0x1000. Referenced by &ath9k in 25.12.
+                nvmem-layout {
+                    compatible = "fixed-layout";
+                    #address-cells = <1>;
+                    #size-cells = <1>;
 
-					calibration_art_1000: calibration@1000 {
-						reg = <0x1000 0xeb8>;
-					};
-				};
-			};
-		};
-	};
+                    calibration_art_1000: calibration@1000 {
+                        reg = <0x1000 0xeb8>;
+                    };
+                };
+            };
+        };
+    };
 };
