@@ -13,7 +13,7 @@ What lives here:
   flashable **Releases** (new OpenWrt releases are picked up by Renovate on the
   upstream Gitea, not by a workflow here — see [CI](#ci--automated-builds-and-releases));
 - a **reproducibility cross-check** proving the local and CI images are
-  byte-identical.
+  identical apart from a documented residue.
 
 > ⚠️ **Hardware requirement.** The images need **BOTH** mods: 16 MB flash
 > (W25Q128-class) **and** the 32→64 MB RAM upgrade. Stock 4 MB flash cannot
@@ -108,10 +108,12 @@ what makes the reproducibility cross-check meaningful). The CI runs the
 `_inner-build.sh`, same seed, same pin file. Pieces:
 
 - **`ci/wr941nd-v4-16m.env`** — the single source of truth: `OPENWRT_TAG`
-  (exact release), `SEED_FILE`, `DEVICE_NAME`. Both CI and `build.sh` read it.
+  (exact release) with `OPENWRT_COMMIT` (the commit it must resolve to),
+  `SEED_FILE`, `DEVICE_NAME`. Both CI and `build.sh` read it, and both refuse a
+  source tree whose commit differs from the pin.
 - **`renovate.json`** — a self-hosted Renovate (daily) bumps the
-  `OPENWRT_TAG` pin from OpenWrt's release tags: a patch release in the
-  pinned series → auto-PR on Gitea; a **series jump** (e.g. v26.x) waits for
+  `OPENWRT_TAG`/`OPENWRT_COMMIT` pin from OpenWrt's release tags: a patch
+  release in the pinned series → auto-PR on Gitea; a **series jump** (e.g. v26.x) waits for
   approval on the dependency dashboard, because it needs manual DTS/seed
   review first (the 24.10→25.12 nvmem-layout change is the precedent).
   Renovate also bumps the SHA-pinned GitHub Actions and the container base
@@ -119,8 +121,11 @@ what makes the reproducibility cross-check meaningful). The CI runs the
 - **`.github/workflows/build.yml`** — a push to a `renovate/**` branch
   (arriving via the mirror) runs a **canary build**; a `v*` **tag** push
   builds and publishes the **Release** (`<tag>-wr941nd-v4-16m`: factory +
-  sysupgrade + manifest + SHA256SUMS — never the FULLFLASH). Plain `master`
-  pushes do not build.
+  sysupgrade + manifest + SHA256SUMS — never the FULLFLASH). The build runs
+  with a read-only token; only the separate release job can write. Plain
+  `master` pushes do not build.
+- **`.github/workflows/check.yml`** — runs `scripts/check.sh` (secret scan,
+  shellcheck, yamllint) on every push.
 - **`scripts/tag-release.sh`** — run on master after merging a bump PR:
   creates the release tag on Gitea; the mirror forwards it and GitHub
   releases. (Tags must originate on Gitea — the push mirror prunes refs that
@@ -188,12 +193,11 @@ One-time setup after forking:
 
 ### Reproducibility (supply-chain cross-check)
 
-Verified on v25.12.4 and v25.12.5: a clean local build and the CI build are
-**byte-identical** — kernel and every rootfs file — except a known-benign
-residue of build timestamps embedded by packages that ignore
-`SOURCE_DATE_EPOCH` (the exact whitelist, and how it was established, is
-documented in [scripts/_inner-repro-compare.sh](scripts/_inner-repro-compare.sh)).
-Two determinism fixes make this possible:
+A local build and the CI build of the same tag are **byte-identical** — the
+kernel and every rootfs file — except for a known-benign residue in the apk
+database (the exact whitelist is in
+[scripts/_inner-repro-compare.sh](scripts/_inner-repro-compare.sh)). Two
+determinism fixes make this possible:
 
 - `CONFIG_KERNEL_BUILD_USER/DOMAIN` pinned in the seed (otherwise the kernel
   banner embeds the random container hostname);

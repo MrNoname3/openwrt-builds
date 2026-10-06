@@ -25,7 +25,8 @@ What the project is and how to build and release it is in the
 - **Do not change the deployed AP** (config, reboot, sysupgrade) without the
   owner's explicit go-ahead. Reading its state is fine.
 - Commit subjects use an area prefix — `docs:`, `ci:`, `seed:`, `build:`,
-  `scripts:`, `renovate:`, `editor:` — one concern per commit.
+  `scripts:`, `renovate:`, `editor:`, `repo:`, `style:` — one concern per
+  commit.
 - **Run `./scripts/check.sh` before every push** (a push is a publication,
   through the mirror); `git config core.hooksPath .githooks` makes git run it
   as a pre-push hook. It scans the tracked files for private data and runs
@@ -88,16 +89,17 @@ be deleted at any time. Keep secrets out of it; it is plain and unencrypted.
 
 ### Handling a Renovate PR
 
-1. Check the canary build for that branch on GitHub Actions is green.
-2. Read the diff. For an Action bump, confirm the pinned SHA is the upstream
-   tag's commit: `git ls-remote --tags <action repo> 'vX.Y.Z*'` (the `^{}` line).
-3. Merge on Gitea.
-4. Only for an `OPENWRT_TAG` bump: run `scripts/tag-release.sh`, which tags on
-   `origin`; the mirror forwards the tag and GitHub builds the Release. Digest
-   and Action bumps need no release. Flashing is the owner's call.
+The routine is the README's "Releasing a new OpenWrt version". What it leaves
+to judgement:
 
-Series jumps (e.g. v26.x) and base-image major bumps wait on Renovate's
-dependency dashboard: they need a DTS/seed review first.
+- **Canary status** is on GitHub, readable without a token:
+  `curl -s 'https://api.github.com/repos/MrNoname3/openwrt-builds/actions/runs?branch=<branch>&per_page=3'`.
+- **Read the diff.** For an Action bump, confirm the pinned SHA is the upstream
+  tag's commit: `git ls-remote --tags <action repo> 'vX.Y.Z*'` (the `^{}` line
+  for an annotated tag). For an OpenWrt bump, `OPENWRT_COMMIT` must be the
+  `^{}` commit of the new tag in `github.com/openwrt/openwrt`.
+- Only an `OPENWRT_TAG` bump gets a release (`scripts/tag-release.sh`); digest
+  and Action bumps do not. Flashing is the owner's call.
 
 ### Forge gotchas
 
@@ -117,9 +119,8 @@ dependency dashboard: they need a DTS/seed review first.
 
 ## Verifying images
 
-- `scripts/repro-compare.sh a.bin b.bin` compares two same-tag sysupgrade
-  images and passes only modulo the whitelisted timestamp residue documented
-  in `scripts/_inner-repro-compare.sh`. Any other difference is a red flag.
+- How `scripts/repro-compare.sh` decides is in the README's "Reproducibility"
+  section. Put a downloaded Release image in `work/` before comparing it.
 - Compare package manifests as sets: `sort` collates differently between
   environments.
 - Rebuilding the same tag never brings newer packages: a release's

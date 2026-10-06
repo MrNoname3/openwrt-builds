@@ -84,7 +84,7 @@ jobs:
         # from an Actions runner.
         # Blobless clone, NOT shallow: scripts/getver.sh counts commits to derive
         # the revision (rXXXXX); with --depth 1 it falls back to r1 and taints
-        # base-files' version + /etc/openwrt_release (seen on the first CI run).
+        # base-files' version + /etc/openwrt_release.
         # The checked-out commit must be the one pinned next to the tag.
         run: |
           git clone --filter=blob:none --branch "$OPENWRT_TAG" \
@@ -99,8 +99,7 @@ jobs:
         # Without this every build tree generates its OWN signing key: the
         # public key lands in /etc/apk/keys/public-key.pem and every package
         # signature depends on it, so two builds of the same tag can never be
-        # bit-identical (verified 2026-07-06: this + the kernel banner were the
-        # only diffs). The secrets hold the project keypair -- the same
+        # bit-identical. The secrets hold the project keypair -- the same
         # private-key.pem / public-key.pem that sit in the local tree's root.
         # Skipped (build falls back to a fresh key) if the secret is not set.
         # NOTE: the secrets context is not allowed in step-level `if`, so the
