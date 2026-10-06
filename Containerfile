@@ -1,15 +1,12 @@
-# OpenWrt buildroot environment (24.10 and later).
-#
-# Debian bookworm: python3 by default, recent gcc/binutils -- what current
-# OpenWrt expects. The buildroot refuses to run as root, so builds run as the
-# unprivileged 'builder' user; start with --userns=keep-id so bind-mounted files
-# stay owned correctly.
+# OpenWrt build environment. The buildroot refuses to run as root, so builds run
+# as the unprivileged 'builder' user; start with --userns=keep-id so bind-mounted
+# files stay owned correctly.
 
 FROM debian:bookworm@sha256:2c037a04925515fdd6ea85ea14a682d0e79931f5e9f5d07b6dbfc6ba12f9e858
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# OpenWrt build dependencies (Debian) for current releases.
+# OpenWrt build dependencies.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential clang flex bison g++ gawk \
         gcc-multilib g++-multilib gettext git \
