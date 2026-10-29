@@ -35,11 +35,15 @@ To turn it into a dumb AP:
 1. Take a config backup and copy it off the device: `sysupgrade -b /tmp/b.tar.gz`.
 2. Download the `-sysupgrade.bin` from the Release and check it against
    `SHA256SUMS`.
-3. Flash with **settings kept** — from LuCI, or over SSH. Dropbear has no
-   scp/sftp, so upload through a pipe:
+3. Flash with **settings kept**, skipping the files that still match the
+   running image (`-u`; in LuCI "Skip from backup files that are equal to
+   those in /rom"). Without it, base files such as `/etc/profile` are carried
+   over on every upgrade and never get a new release's version; edited and
+   added files are kept either way. Dropbear has no scp/sftp, so over SSH
+   upload through a pipe:
    ```sh
    cat fw-sysupgrade.bin | ssh root@<ap> 'cat > /tmp/fw.bin'
-   ssh root@<ap> 'sha256sum /tmp/fw.bin && sysupgrade -v /tmp/fw.bin'
+   ssh root@<ap> 'sha256sum /tmp/fw.bin && sysupgrade -u -v /tmp/fw.bin'
    ```
 4. Wait. The first boot after a sysupgrade takes **5–6 minutes** while the
    overlay is rebuilt and the config migrated; the system LED blinks
