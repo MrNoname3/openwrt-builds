@@ -19,6 +19,16 @@ cd /work
 [ "$(id -u)" = "0" ] && { echo "[!] Running as root; the OpenWrt buildroot refuses it. Use --userns=keep-id." >&2; exit 1; }
 echo "[i] OpenWrt: $(git describe --tags --always 2>/dev/null || echo unknown)"
 
+# 0. Clean slate --------------------------------------------------------------
+# make does not redo the toolchain or unchanged packages, which carry the
+# revision and build date of the tree's previous inputs. BUILD_KEY (set by
+# build.sh) is recorded once the wipe is done; downloads survive it.
+if [ -n "${BUILD_KEY:-}" ] && [ "$(cat .build-key 2>/dev/null)" != "$BUILD_KEY" ]; then
+    echo "[*] Build inputs changed since this tree's last build -> make dirclean ..."
+    make dirclean
+    echo "$BUILD_KEY" > .build-key
+fi
+
 # 1. Feeds --------------------------------------------------------------------
 echo "[*] feeds update/install ..."
 ./scripts/feeds update -a

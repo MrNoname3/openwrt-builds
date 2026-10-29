@@ -80,11 +80,11 @@ plus the FULLFLASH full-chip image when a router backup exists locally (the
 u-boot/art dumps are device-unique and not in git — see the
 [hardware guide](docs/hardware-mod.md) for what each image is for).
 
-> ⚠️ **When editing a seed:** adding or removing `kmod-*` packages changes the
-> kernel VERMAGIC, and in an already-built tree `package/install` then fails
-> with *"Cannot satisfy … kernel (= hash)"*. Rebuild the kernel in that case
-> (delete the build tree, or run `make clean` in it). Seed changes that only
-> touch userspace packages are safe.
+The tree is reused between builds until the pinned commit, the seed or the
+`Containerfile` changes. Then `build.sh` wipes its build output first
+(`make dirclean`, downloads kept), because the toolchain and unchanged packages
+would otherwise keep the previous revision and build date, and that build takes
+the full time again.
 
 ## CI — automated builds and releases
 

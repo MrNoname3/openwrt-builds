@@ -80,6 +80,10 @@ if [ -z "${TAG:-}" ]; then
 fi
 
 # --- 4. Build in the container ------------------------------------------------
+# Names the inputs a tree's artifacts depend on beyond what make tracks; on a
+# change _inner-build.sh starts from a clean tree, as the CI's fresh clone does.
+build_key="$(git -C "$TREE" rev-parse HEAD) $(cat "$PROJECT_DIR/Containerfile" \
+    "$PROJECT_DIR/config/$SEED_FILE" | sha256sum | cut -d' ' -f1)"
 ensure_image
 echo "[*] Building firmware in container ..."
 podman_run run --rm \
@@ -89,6 +93,7 @@ podman_run run --rm \
     -v "$PROJECT_DIR/scripts:/opt/scripts:ro,Z" \
     -e "JOBS=${JOBS:-}" \
     -e "SEED_FILE=$SEED_FILE" \
+    -e "BUILD_KEY=$build_key" \
     -w /work \
     "$IMAGE" \
     bash /opt/scripts/_inner-build.sh

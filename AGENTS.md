@@ -39,7 +39,7 @@ What the project is and how to build and release it is in the
 
 | Location | In git | What it holds |
 |----------|:------:|---------------|
-| `~/.local/share/openwrt-wr941nd/openwrt-<series>/` | no | OpenWrt build tree, one per release series, created by `scripts/build.sh`; reused incrementally |
+| `~/.local/share/openwrt-wr941nd/openwrt-<series>/` | no | OpenWrt build tree, one per release series, created by `scripts/build.sh`; reused until the pin, seed or `Containerfile` changes |
 | `<build tree>/private-key.pem`, `public-key.pem` | no | the project's apk signing keypair; CI holds the same pair as Actions secrets |
 | `firmware/router-backup/<ts>/` | no | mtd dumps of the original flash — `u-boot` and `art` are irreplaceable |
 | `firmware/built/16m-<version>/` | no | build output; the FULLFLASH image only when a backup is present |
