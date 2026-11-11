@@ -1,7 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
-  "labels": ["dependencies"],
+  "extends": ["local>MrNoname3/renovate-config:base"],
   "customManagers": [
     {
       "customType": "regex",
