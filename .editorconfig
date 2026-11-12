@@ -1,5 +1,8 @@
-# Whitespace rules for every editor; VS Code applies them through the
-# recommended EditorConfig extension. https://editorconfig.org
+# EditorConfig: editor-agnostic enforcement of the project's whitespace rules,
+# applied in VS Code by the recommended EditorConfig extension. Mirrors the
+# indentation used across this repo (shell, YAML and JSON are 2-space, Python
+# 4-space as PEP 8 has it).
+# https://editorconfig.org
 root = true
 
 [*]
@@ -10,6 +13,10 @@ indent_size = 2
 trim_trailing_whitespace = true
 insert_final_newline = true
 
+[*.py]
+indent_size = 4
+
+# Shell, device trees and the Containerfile follow the OpenWrt tree's 4-space style.
 [{*.sh,*.dts,Containerfile}]
 indent_size = 4
 

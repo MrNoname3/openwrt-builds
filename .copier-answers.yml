@@ -1,0 +1,16 @@
+_commit: v0.1.7
+_src_path: https://forge.invalid/MrNoname3/repo-template.git
+ansible: false
+ci_timeout: 10
+copyright_year: '2026'
+description: 'Custom OpenWrt builds for the flash/RAM-modded TP-Link TL-WR941ND v4
+    (4→16MB flash, 32→64MB RAM): containerized buildroot, Renovate-driven OpenWrt
+    version bumps, GitHub Actions CI that builds and publishes releases, and a reproducibility
+    cross-check between local and CI images.'
+python_pin: true
+python_project: false
+python_version: '3.14'
+repo_name: openwrt-builds
+scan_identifiers: true
+shared_gate: true
+visibility: public

@@ -10,13 +10,6 @@
       "depNameTemplate": "openwrt/openwrt",
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "semver-coerced"
-    },
-    {
-      "customType": "regex",
-      "description": "Tools downloaded by the workflows: a '# renovate: datasource=... depName=...' comment above a line holding version=<tag> sum=<sha256>; github-release-attachments takes the new sum from the release's checksums file",
-      "managerFilePatterns": ["/^\\.github/workflows/.+\\.ya?ml$/"],
-      "matchStrings": ["# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n[^\\n]*version=(?<currentValue>\\S+) sum=(?<currentDigest>[0-9a-f]{64})"],
-      "versioningTemplate": "semver-coerced"
     }
   ],
   "packageRules": [
