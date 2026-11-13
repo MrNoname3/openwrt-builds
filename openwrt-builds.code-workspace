@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"name": "openwrt-builds",
+			"path": "."
+		}
+	],
+	"settings": {
+		// work/ stays visible in the explorer; its downloads and images are kept
+		// out of search and file watching.
+		"search.exclude": { "work/**": true },
+		"files.watcherExclude": { "**/work/**": true },
+		"files.trimTrailingWhitespace": true,
+		"files.insertFinalNewline": true
+	},
+	"extensions": {
+		"recommendations": [
+			"editorconfig.editorconfig"
+		]
+	}
+}
